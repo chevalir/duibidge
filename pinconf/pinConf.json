@@ -1,0 +1,152 @@
+{
+  "nodeName": "Arduino1",
+  "card": "UNO, duemilanove328, leo, nano168, nano328, mega2560",
+  "digitals": {
+    "dpins": [
+      {
+        "card_pin": "DIGITAL 2 (INT0)",
+        "mode": "r; Recepteur 433",
+        "topic": "radio/recepteur"
+      },
+      {
+        "card_pin": "DIGITAL 3 (INT1 - PWM)",
+        "mode": "t; Emetteur 433",
+        "topic": "radio/emetteur"
+      },
+      {
+        "card_pin": "DIGITAL 4 ",
+        "mode": "y; Entrée Digitale avec Pull-Up",
+        "topic": "bureau/spot/retour"
+      },
+      {
+        "card_pin": "DIGITAL 5 (PWM)",
+        "mode": "z; disable",
+        "topic": ""
+      },
+      {
+        "card_pin": "DIGITAL 6 (PWM)",
+        "mode": "o; Sortie Digitale",
+        "topic": "digital/d6"
+      },
+      {
+        "card_pin": "DIGITAL 7 ",
+        "mode": "o; Sortie Digitale",
+        "topic": "digital/d7"
+      },
+      {
+        "card_pin": "DIGITAL 8 ",
+        "mode": "i; Entrée Digitale",
+        "topic": "digital/d8"
+      },
+      {
+        "card_pin": "DIGITAL 13 (LED)",
+        "mode": "o; Sortie Digitale",
+        "topic": "digital/d13"
+      }
+    ]
+  },
+  "analog": {
+    "apins": [
+      {
+        "card_pin": "A0; ANALOG IN A0",
+        "mode": "a; Entrée analogique",
+        "topic": "ananlog/A0"
+      }
+    ]
+  },
+  "custom": {
+    "cpins": [
+      {
+        "custom_pin": 0,
+        "mode": "c; Custom in",
+        "topic": "chz/temp"
+      },
+      {
+        "custom_pin": 1,
+        "mode": "c; Custom in",
+        "topic": "chami/temp"
+      },
+      {
+        "custom_pin": 2,
+        "mode": "c; Custom in",
+        "topic": "douche/temp"
+      },
+      {
+        "custom_pin": 3,
+        "mode": "c; Custom in",
+        "topic": "douche/humi"
+      },
+      {
+        "custom_pin": 6,
+        "mode": "c; Custom in",
+        "topic": "bain/temp"
+      },
+      {
+        "custom_pin": 7,
+        "mode": "c; Custom in",
+        "topic": "bain/humi"
+      },
+      {
+        "custom_pin": 8,
+        "mode": "c; Custom in",
+        "topic": "jardin/temp"
+      },
+      {
+        "custom_pin": 9,
+        "mode": "c; Custom in",
+        "topic": "jardin/humi"
+      },
+      {
+        "custom_pin": 10,
+        "mode": "c; Custom in",
+        "topic": "garage/temp"
+      },
+      {
+        "custom_pin": 11,
+        "mode": "c; Custom in",
+        "topic": "jardin/pression"
+      },
+      {
+        "custom_pin": 12,
+        "mode": "c; Custom in",
+        "topic": "garage/congel/temp"
+      },
+      {
+        "custom_pin": 20,
+        "mode": "c; Custom in",
+        "topic": "douche/vmc/retour"
+      },
+      {
+        "custom_pin": 25,
+        "mode": "c; Custom in",
+        "topic": "bain/vmc/retour"
+      },
+      {
+        "custom_pin": 26,
+        "mode": "c; Custom in",
+        "topic": "bain/spots/retour"
+      },
+      {
+        "custom_pin": 27,
+        "mode": "c; Custom in",
+        "topic": "bain/miroir/retour"
+      }
+    ]
+  },
+  "radio": {
+    "cradio": [
+      {
+        "typeradio": "H; Chacon DIO",
+        "radiocode": "12802190",
+        "mode": "r; Reception",
+        "topic": "rbt/imac"
+      },
+      {
+        "typeradio": "H; Chacon DIO",
+        "radiocode": "14176918",
+        "mode": "r; Reception",
+        "topic": "rbt/salon"
+      }
+    ]
+  }
+}

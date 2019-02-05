@@ -1,0 +1,252 @@
+{
+  "properties": {
+    "nodeName": {
+      "type": "string",
+      "title": "Node name"
+    },
+    "card": {
+      "type": "string",
+      "title": "Card model",
+      "enum": [
+        "UNO, duemilanove328, leo, nano168, nano328, mega2560",
+        "mega1280, mega2560",
+				"due",
+				"esp201",
+ 				"dimini",
+        "other"
+      ]
+    },
+    "digitals": {
+      "type": "object",
+      "title": "configuration des pins",
+      "properties": {
+        "dpins": {
+          "type": "array",
+          "format": "table",
+          "title": "Pins",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "card_pin": {
+                "type": "string",
+                "title": "Card pin",
+                "enum": [
+                  "Select Pin",
+                  "DIGITAL 2 (INT0)",
+                  "DIGITAL 3 (INT1 - PWM)",
+                  "DIGITAL 4 ",
+                  "DIGITAL 5 (PWM)",
+                  "DIGITAL 6 (PWM)",
+                  "DIGITAL 7 ",
+                  "DIGITAL 8 ",
+                  "DIGITAL 9 (PWM)",
+                  "DIGITAL 10 (PWM)",
+                  "DIGITAL 11 (PWM)",
+                  "DIGITAL 12 ",
+                  "DIGITAL 13 (LED)"
+                ],
+                "default": "Select Pin"
+              },
+              "mode": {
+                "type": "string",
+                "title": "Pin mode",
+                "enum": [
+                  "z; disable",
+                  "t; Emetteur 433",
+                  "r; Recepteur 433",
+                  "i; Entrée Digitale",
+                  "j; Entrée Digitale Inversée",
+                  "y; Entrée Digitale avec Pull-Up",
+                  "o; Sortie Digitale",
+                  "e; Sortie Digitale en Push down",
+                  "u; Sortie Digitale en pulse UP",
+                  "v; Sortie Digitale en pulse DOWN",
+                  "x; Sortie Digitale à inversion",
+                  "b; Sortie Digitale à clignotement",
+                  "1; Sonde DHT1",
+                  "2; Sonde DHT2",
+                  "3; Sonde DHT3",
+                  "4; Sonde DHT4",
+                  "5; Sonde DHT5",
+                  "6; Sonde DHT6",
+                  "7; Sonde DHT7",
+                  "8; Sonde DHT8"
+                ],
+                "default": "disable"
+              },
+              "prefix": {
+                "type": "boolean",
+                "format": "checkbox",
+                "default" : true,
+                "description" : "action/status",
+                "title": "add prefix"
+              },
+              "topic": {
+                "type": "string",
+                "title": "nom du topic"
+              }
+            }
+          }
+        }
+      }
+    },
+    "analog": {
+      "type": "object",
+      "title": "Analog pins configuration",
+      "properties": {
+        "apins": {
+          "type": "array",
+          "format": "table",
+          "title": "Pins",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "card_pin": {
+                "type": "string",
+                "title": "Card pin",
+                "enum": [
+                  "Select Pin",
+                  "A0; ANALOG IN A0",
+                  "A1; ANALOG IN A1",
+                  "A2; ANALOG IN A2",
+                  "A3; ANALOG IN A3",
+                  "A4; ANALOG IN A4",
+                  "A5; ANALOG IN A5"
+                ],
+                "default": "Select Pin"
+              },
+              "mode": {
+                "type": "string",
+                "title": "Pin mode",
+                "enum": [
+                  "disable",
+                  "a; Entrée analogique"
+                ],
+                "default": "disable"
+              },
+              "prefix": {
+                "type": "boolean",
+                "format": "checkbox",
+                "default" : true,
+                "description" : "action/status",
+                "title": "add prefix"
+              },
+              "topic": {
+                "type": "string",
+                "title": "nom du topic"
+              }
+            }
+          }
+        }
+      }
+    },
+    "custom": {
+      "type": "object",
+      "title": "Custom pins configuration, \nchoisir le N° et mode des customPin",
+      "properties": {
+        "cpins": {
+          "type": "array",
+          "format": "table",
+          "title": "Custom",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "options": {
+              "expand_height": true
+            },
+            "properties": {
+              "custom_pin": {
+                "type": "number",
+                "title": "Custom pin index"
+              },
+              "mode": {
+                "type": "string",
+                "title": "Pin mode",
+                "enum": [
+                  "disable",
+                  "c; Custom in",
+                  "d; Custom out"
+                ],
+                "default": "c; Custom in"
+              },
+              "prefix": {
+                "type": "boolean",
+                "format": "checkbox",
+                "default" : true,
+                "description" : "action/status",
+                "title": "add prefix"
+              },
+              "topic": {
+                "type": "string",
+                "title": "nom du topic"
+              }
+            }
+          }
+        }
+      }
+    },
+    "radio": {
+       "type": "object",
+       "title": "Configuration radio",
+      "properties": {
+        "cradio": {
+          "type": "array",
+          "format": "table",
+          "title": "Radio",
+          "uniqueItems": false,
+          "items": {
+            "type": "object",
+            "properties": {
+              "typeradio": {
+                "type": "string",
+                "title": "Type radio",
+                "enum": [
+                  "disable",
+                  "T; TriState",
+                  "E; TriState EuroDomEst",
+                  "H; Chacon DIO"
+                ],
+                "default": "H; Chacon DIO"
+              },
+              "radiocode": {
+                "type": "string",
+                "title": "code radio"
+              },
+              "device": {
+                "type": "integer",
+                "title": "Device",
+                "default" : 0,
+                "minimum" : 0,
+                "maximum" : 16
+              },
+              "mode": {
+                "type": "string",
+                "title": "Pin mode",
+                "enum": [
+                  "disable",
+                  "t; Trans.",
+                  "r; Reception",
+                  "tr; Trans./Recep."
+                ],
+                "default": "tr; Trans./Recep."
+              },
+              "prefix": {
+                "type": "boolean",
+                "format": "checkbox",
+                "default" : true,
+                "description" : "action/status",
+                "title": "add prefix"
+              },
+              "topic": {
+                "type": "string",
+                "title": "nom topic"
+              }        
+            }
+          }
+        }       
+      }
+    }
+  }
+}
