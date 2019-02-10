@@ -1,0 +1,11 @@
+{
+	"id" : "duibridge",
+	"name" : "DuiBridge",
+	"description" : "Plugin duibridge",
+	"licence" : "AGPL",
+	"author" : "chevalir",
+	"require" : "2.3",
+	"category" : "automation protocol",
+	"hasDependency" : false,
+	"hasOwnDeamon" : true
+}

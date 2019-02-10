@@ -1,0 +1,298 @@
+{
+  "analog": {
+    "apins": [
+      {
+        "card_pin": "A0; ANALOG IN A0", 
+        "mode": "a; Entr\u00e9e analogique", 
+        "prefix": true, 
+        "topic": "ananlog/A0"
+      }
+    ]
+  }, 
+  "card": "UNO, duemilanove328, leo, nano168, nano328, mega2560", 
+  "custom": {
+    "cpins": [
+      {
+        "custom_pin": 0, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "ch_z/temp"
+      }, 
+      {
+        "custom_pin": 1, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "ch_ami/temp"
+      }, 
+      {
+        "custom_pin": 2, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "douche/temp"
+      }, 
+      {
+        "custom_pin": 3, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "douche/humi"
+      }, 
+      {
+        "custom_pin": 6, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "bain/temp"
+      }, 
+      {
+        "custom_pin": 7, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "bain/humi"
+      }, 
+      {
+        "custom_pin": 8, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "jardin/temp"
+      }, 
+      {
+        "custom_pin": 9, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "jardin/humi"
+      }, 
+      {
+        "custom_pin": 10, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "garage/temp"
+      }, 
+      {
+        "custom_pin": 11, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "jardin/pression"
+      }, 
+      {
+        "custom_pin": 4, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "garage/congel/temp"
+      }, 
+      {
+        "custom_pin": 20, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "douche/vmc"
+      }, 
+      {
+        "custom_pin": 25, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "bain/vmc"
+      }, 
+      {
+        "custom_pin": 26, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "bain/spots"
+      }, 
+      {
+        "custom_pin": 27, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "bain/miroir"
+      }, 
+      {
+        "custom_pin": 23, 
+        "mode": "c; Custom in", 
+        "prefix": true, 
+        "topic": "garage/chaudiere/bruleur"
+      }
+    ]
+  }, 
+  "digitals": {
+    "dpins": [
+      {
+        "card_pin": "DIGITAL 2 (INT0)", 
+        "mode": "r; Recepteur 433", 
+        "prefix": true, 
+        "topic": "radio/recepteur"
+      }, 
+      {
+        "card_pin": "DIGITAL 3 (INT1 - PWM)", 
+        "mode": "t; Emetteur 433", 
+        "prefix": true, 
+        "topic": "radio/emetteur"
+      }, 
+      {
+        "card_pin": "DIGITAL 4 ", 
+        "mode": "y; Entr\u00e9e Digitale avec Pull-Up", 
+        "prefix": true, 
+        "topic": "bureau/spot"
+      }, 
+      {
+        "card_pin": "DIGITAL 5 (PWM)", 
+        "mode": "z; disable", 
+        "prefix": true, 
+        "topic": ""
+      }, 
+      {
+        "card_pin": "DIGITAL 6 (PWM)", 
+        "mode": "o; Sortie Digitale", 
+        "prefix": true, 
+        "topic": "digital/d6"
+      }, 
+      {
+        "card_pin": "DIGITAL 7 ", 
+        "mode": "o; Sortie Digitale", 
+        "prefix": true, 
+        "topic": "digital/d7"
+      }, 
+      {
+        "card_pin": "DIGITAL 8 ", 
+        "mode": "i; Entr\u00e9e Digitale", 
+        "prefix": true, 
+        "topic": "digital/d8"
+      }, 
+      {
+        "card_pin": "DIGITAL 13 (LED)", 
+        "mode": "o; Sortie Digitale", 
+        "prefix": true, 
+        "topic": "digital/d13"
+      }
+    ]
+  }, 
+  "nodeName": "cabradom/node1", 
+  "radio": {
+    "cradio": [
+      {
+        "device": 1, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "9778158", 
+        "topic": "sas/lampe", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 1, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "13683830", 
+        "topic": "sas/volet", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 1, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "15435606", 
+        "topic": "ch_br/lumiere", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 2, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "15435606", 
+        "topic": "ch_br/lampe_rouge", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 1, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "19940334", 
+        "topic": "bain/vmc", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 2, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "19940334", 
+        "topic": "bain/lampe", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 3, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "19940334", 
+        "topic": "bain/miroir", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 1, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "12802190", 
+        "topic": "salon/imac/lampe", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 2, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "12802190", 
+        "topic": "salon/living/lumiere", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 3, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "12802190", 
+        "topic": "salon/repas/lumiere", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 1, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "14176918", 
+        "topic": "salon/repas/lumiere", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 2, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "14176918", 
+        "topic": "salon/living/lumiere", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 3, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "14176918", 
+        "topic": "salon/living/lampes", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 4, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "14176918", 
+        "topic": "salon/living/hifi", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 1, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "15435858", 
+        "topic": "cabradom/node1/radio/15435858/1", 
+        "typeradio": "H; Chacon DIO"
+      }, 
+      {
+        "device": 2, 
+        "mode": "tr; Trans./Recep.", 
+        "prefix": true, 
+        "radiocode": "15435858", 
+        "topic": "cabradom/node1/radio/15435858/2", 
+        "typeradio": "H; Chacon DIO"
+      }
+    ]
+  }
+}
