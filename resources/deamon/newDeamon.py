@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import serial
-from socket import *
 import time
 import subprocess
 import os
@@ -39,8 +38,9 @@ class Arduino_Node(object):
     while True:
       # Do something
       print('Doing something imporant in the background')
-      self.read_queue()
-      time.sleep(5000)
+      time.sleep(1)
+      if not self.request_queue.empty(): 
+        self.read_queue()      
       self.read_serial()
 
   def init_serial_com(self):
@@ -54,6 +54,7 @@ class Arduino_Node(object):
     SerialPort.flush()
     SerialPort.flushInput()
     logger.debug("Arduino {} wainting for HELLO".format(self.ID))
+    line = ""
     checktimer = 0
     while not re.search("^HELLO", line):
       time.sleep(1)
@@ -61,17 +62,17 @@ class Arduino_Node(object):
       line = SerialPort.readline()
       line = line.replace('\n', '')
       line = line.replace('\r', '')
-      logger.debug("0_Arduino " + str(arduID) + " >> [" + line + "]")
+      logger.debug("0_Arduino " + str(self.ID) + " >> [" + line + "]")
       if checktimer > 15:
         logger.error("TIMEOUT d'attente du HELLO de l'arduino " + str(arduID))
         quit()
     SerialPort.flush()
     SerialPort.flushInput()
-    logger.debug("Arduino " + str(arduID) + " est pret.")
+    logger.debug("Arduino " + str(self.ID) + " ready for action")
     ##open serial port @@TODO
   
   def read_serial(self):
-    print( "@@TODO readserial" )
+    print( "@@TODO read_serial" )
 
   def read_queue(self):
     print( "@@TODO read_queue" )
