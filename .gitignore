@@ -6,3 +6,5 @@ resources/deamon/openzwaved.py
 plugin_info/oz-configuration.php
 core/class/openzwave.class.php
 togit.sh
+togit.sh
+sync.sh

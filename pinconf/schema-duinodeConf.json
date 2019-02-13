@@ -2,7 +2,8 @@
   "properties": {
     "nodeName": {
       "type": "string",
-      "title": "Node name"
+      "title": "Node name",
+      "description": "(racine de tous les topic <node name>/<action or status>/...)"
     },
     "card": {
       "type": "string",

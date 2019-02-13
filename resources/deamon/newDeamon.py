@@ -13,9 +13,13 @@ import xml.dom.minidom as minidom
 from Queue import Queue
 import threading
 
+
 __author__ = 'chevalir'
 logger = logging.getLogger("duibridge")
 options={}
+
+Start_of_header="HELLO"
+
 
 
 ''' -----------------------------------------
@@ -26,6 +30,7 @@ class Arduino_Node(object):
     self.request_queue=queue
     self.ID = arduino_id
     self.baud=115200
+    
     thread = threading.Thread(target=self.run, args=())
     thread.daemon = True                            # Daemonize thread
     thread.start()                                  # Start the execution
@@ -37,42 +42,50 @@ class Arduino_Node(object):
     self.init_serial_com()
     while True:
       # Do something
-      print('Doing something imporant in the background')
       time.sleep(1)
       if not self.request_queue.empty(): 
         self.read_queue()      
       self.read_serial()
 
   def init_serial_com(self):
-    SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
-    SerialPort.flush()
-    SerialPort.flushInput()
-    SerialPort.setDTR(True)
+    self.SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
+    self.SerialPort.flush()
+    self.SerialPort.flushInput()
+    ## hardware reset using DTR line
+    self.SerialPort.setDTR(True)
     time.sleep(0.030) # Read somewhere that 22ms is what the UI does.
-    SerialPort.setDTR(False)
+    self.SerialPort.setDTR(False)
     time.sleep(0.200)
-    SerialPort.flush()
-    SerialPort.flushInput()
+    
+    self.SerialPort.flush()
+    self.SerialPort.flushInput()
     logger.debug("Arduino {} wainting for HELLO".format(self.ID))
     line = ""
     checktimer = 0
-    while not re.search("^HELLO", line):
+    while line.find(Start_of_header) < 0:
       time.sleep(1)
       checktimer += 1
-      line = SerialPort.readline()
+      line = self.read_serial()
+      
       line = line.replace('\n', '')
       line = line.replace('\r', '')
       logger.debug("0_Arduino " + str(self.ID) + " >> [" + line + "]")
       if checktimer > 15:
         logger.error("TIMEOUT d'attente du HELLO de l'arduino " + str(arduID))
         quit()
-    SerialPort.flush()
-    SerialPort.flushInput()
+    self.SerialPort.flush()
+    self.SerialPort.flushInput()
     logger.debug("Arduino " + str(self.ID) + " ready for action")
     ##open serial port @@TODO
   
   def read_serial(self):
-    print( "@@TODO read_serial" )
+    line = self.SerialPort.readline()
+    if line != '':
+      line = line.replace('\n', '')
+      line = line.replace('\r', '')
+      print("line:"+line)
+    return line
+    ##print( "@@TODO read_serial"+line )
 
   def read_queue(self):
     print( "@@TODO read_queue" )
@@ -83,7 +96,7 @@ class Arduino_Node(object):
 
 ''' -----------------------------------------
 '''
-class Arduino_Config:
+class Arduino_Config(object):
 
   ''' ...............................................'''
   def __init__(self, conf_file_path):

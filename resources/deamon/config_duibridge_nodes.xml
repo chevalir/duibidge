@@ -3,7 +3,7 @@
     <ArduinoVersion>127</ArduinoVersion>
     <ArduinoQty>2</ArduinoQty>
     <!-- Serial -->
-    <A1_serial_port>/dev/serial/by-path/platform-3f980000.usb-usb-0:1.4:1.0-port0</A1_serial_port>
+    <A1_serial_port>/dev/serial/by-path/platform-20980000.usb-usb-0:1.4:1.0-port0</A1_serial_port>
     <A2_serial_port>Network</A2_serial_port>
     <A3_serial_port>none</A3_serial_port>
     <A4_serial_port>none</A4_serial_port>
