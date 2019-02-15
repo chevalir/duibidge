@@ -2,16 +2,16 @@
 # -*- coding: UTF-8 -*-
 import serial
 import time
-import subprocess
 import os
 import optparse
 import sys
-import signal
 import logging
-import re
 import xml.dom.minidom as minidom
 from Queue import Queue
 import threading
+import paho.mqtt.client as paho
+import json
+
 
 
 __author__ = 'chevalir'
@@ -88,9 +88,39 @@ class Arduino_Node(object):
     ##print( "@@TODO read_serial"+line )
 
   def read_queue(self):
-    print( "@@TODO read_queue" )
+    task = self.request_queue.get(False)
+    print( "@@TODO read_queue:"+str(task) )
+    self.request_queue.task_done()
 
 
+class MQTT_Client(paho.Client):
+    
+
+    def on_connect(self, mqttc, obj, flags, rc):
+        print("rc: "+str(rc))
+
+    def on_message(self, mqttc, obj, msg):
+        print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
+        self.queue.put(str(msg.payload))
+
+    def on_publish(self, mqttc, obj, mid):
+        print("mid: "+str(mid))
+
+    def on_subscribe(self, mqttc, obj, mid, granted_qos):
+        print("Subscribed: "+str(mid)+" "+str(granted_qos))
+
+    def on_log(self, mqttc, obj, level, string):
+        print(string)
+
+    def run(self, broker, sub_topic, qq):
+        paho.disable_logger()
+        self.queue = qq
+        self.connect(broker, 1883, 60)
+        self.subscribe( sub_topic+"/#", 0)
+        rc = 0
+        while rc == 0:
+            rc = self.loop_start()
+        return rc
 
 
 
@@ -107,7 +137,7 @@ class Arduino_Config(object):
     self.pid_file =""
 
   ''' ...............................................'''
-  def load_config(self):
+  def load_node_config(self):
     if os.path.exists( self.conf_file_path ):
       #open the xml file for reading:
       f = open( self.conf_file_path ,'r')
@@ -158,11 +188,15 @@ class Arduino_Config(object):
 
 ''' -----------------------------------------
 '''
-class pin_Config:
+class Pin_config:
 
-  def __init__(self, conf_file_path, conf_save_path):
+  def __init__(self, conf_file_path, conf_save_path=None):
     self.conf_file_path=conf_file_path
-    self.conf_save_path=conf_save_path
+    if conf_save_path==None:
+      self.conf_save_path=conf_file_path
+    else:
+      self.conf_save_path=conf_save_path
+
     self.digital_pins = {}
     self.custom_vpins = {}
     self.r_radio_vpins = {}
@@ -205,7 +239,7 @@ class pin_Config:
       prefix = dpins[pinNum]['prefix']
       if mode=='t':
         self.transmeter_pin = thepin
-      full_topic = get_topic_prefix(mode, prefix)+topic
+      full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.digital_pins[thepin] = (mode, full_topic)
       # @TODO manage output pin ( subscrib to topic )
   
@@ -216,7 +250,7 @@ class pin_Config:
       mode = cpins[pinNum]['mode'].split(";",1)[0]
       topic = cpins[pinNum]['topic']
       prefix = cpins[pinNum]['prefix']
-      full_topic = get_topic_prefix(mode, prefix)+topic
+      full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.custom_vpins[self.DPIN+self.APIN+thepin] = (mode, full_topic)
     logger.debug(self.custom_vpins)
 
@@ -235,12 +269,12 @@ class pin_Config:
       radiocode = rpins[pinNum]['radiocode']
   
       if mode in ['r', 'tr']: 
-        status_topic = get_topic_prefix('r', prefix)+topic
+        status_topic = self.get_topic_prefix('r', prefix)+topic
         radiocode_key = '{}#{:0>2}'.format(rpins[pinNum]['radiocode'], device)
         self.r_radio_vpins.update({radiocode_key:(device, status_topic)})
   
       if mode in ['t', 'tr']:
-        action_topic = get_topic_prefix('t', prefix)+topic
+        action_topic = self.get_topic_prefix('t', prefix)+topic
         self.t_radio_vpins.update({action_topic:(device, radiocode)})
         options.comJeedom.subscribe_topic( action_topic )
     #logger.debug(self.r_radio_vpins)
@@ -252,9 +286,19 @@ class pin_Config:
       , 'prefix': True, 'mode' : 'tr; Trans./Recep.', 'device': device})
     with open(self.conf_save_path, 'w') as outfile:
       json.dump(self.decode, outfile, sort_keys = True, indent = 2)
-    status_topic=get_topic_prefix('r', True)+status_topic
+    status_topic=self.get_topic_prefix('r', True)+status_topic
     logger.info(" new topic added " + status_topic)
     self.r_radio_vpins.update({radiocode_key:(device, status_topic)})
+
+  def get_topic_prefix(self, mode, enable):
+    global options
+    if enable:
+      if mode in ['r', 'c', 'a', 'y','i','j', range(1,8)]: 
+        return(self.rootNode+"/"+'status/') 
+      else:
+        return(self.rootNode+"/"+'action/')
+    else:
+       return(self.rootNode+"/")
 
 
 
@@ -288,12 +332,21 @@ def main(argv=None):
   logger.debug("Config file: " + configFile)
   logger.debug("Read jeedom configuration file")
   options.Ardno_conf = Arduino_Config(configFile)
-  options.Ardno_conf.load_config()
+  options.Ardno_conf.load_node_config()
+
+  options.pin_config = Pin_config(options.config_folder)
+  options.pin_config.load_config()
+
+  
   options.nodes={}
-  arduino_id = 1
+  arduino_id = options.pin_config.rootNode
   options.arduino_queues={arduino_id:Queue()}
-  aNode = Arduino_Node(options.Ardno_conf.Arduino_ports[arduino_id], options.arduino_queues[arduino_id], arduino_id)
+  aNode = Arduino_Node(options.Ardno_conf.Arduino_ports[1], options.arduino_queues[arduino_id], arduino_id)
   options.nodes.update({arduino_id:aNode})
+  mqttc1 = MQTT_Client()
+  rc = mqttc1.run("localhost", arduino_id, options.arduino_queues[arduino_id])
+
+
 
   count = 0
   while count in range(10000):
