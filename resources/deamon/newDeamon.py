@@ -18,9 +18,10 @@ __author__ = 'chevalir'
 logger = logging.getLogger("duibridge")
 options={}
 
-Start_of_header="HELLO"
+from_node={'init': "HELLO", 'conf_pins':"CP", 'set_pin':"SP" }
+to_node = [{"config_pin", 'CP'}]
 
-
+cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
 
 ''' -----------------------------------------
 '''
@@ -62,7 +63,7 @@ class Arduino_Node(object):
     logger.debug("Arduino {} wainting for HELLO".format(self.ID))
     line = ""
     checktimer = 0
-    while line.find(Start_of_header) < 0:
+    while line.find(from_node['init']) < 0:
       time.sleep(1)
       checktimer += 1
       line = self.read_serial()
@@ -83,44 +84,58 @@ class Arduino_Node(object):
     if line != '':
       line = line.replace('\n', '')
       line = line.replace('\r', '')
-      print("line:"+line)
+      print("read_serial :"+line)
     return line
     ##print( "@@TODO read_serial"+line )
 
   def read_queue(self):
     task = self.request_queue.get(False)
     print( "@@TODO read_queue:"+str(task) )
+    if task == "CP":
+      self.write_serial(cmd_cp_default)
     self.request_queue.task_done()
+
+  def write_serial(self, request):
+    while len(request) > 0:
+      self.SerialPort.write(request[:64]) ## send the first bloc 64 char    
+      request = request[64:] ## remove the first bloc from the request.
+      if len(request) > 0:
+        time.sleep(0.1) ## delay before next bloc (if any)
+      else :
+        self.SerialPort.write('\n') ## all blocs sent, now send terminator
+
+
+
 
 
 class MQTT_Client(paho.Client):
     
+  def on_connect(self, mqttc, obj, flags, rc):
+    print("on_connect rc: "+str(rc))
 
-    def on_connect(self, mqttc, obj, flags, rc):
-        print("rc: "+str(rc))
+  def on_message(self, mqttc, obj, msg):
+    print("on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
+    self.queue.put(str(msg.payload))
 
-    def on_message(self, mqttc, obj, msg):
-        print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
-        self.queue.put(str(msg.payload))
+  def on_publish(self, mqttc, obj, mid):
+    print("on_publish mid: "+str(mid))
 
-    def on_publish(self, mqttc, obj, mid):
-        print("mid: "+str(mid))
+  def on_subscribe(self, mqttc, obj, mid, granted_qos):
+    print("on_subscribe: "+str(mid)+" "+str(granted_qos))
 
-    def on_subscribe(self, mqttc, obj, mid, granted_qos):
-        print("Subscribed: "+str(mid)+" "+str(granted_qos))
+  def on_log(self, mqttc, obj, level, string):
+    ##print(string)
+    return
 
-    def on_log(self, mqttc, obj, level, string):
-        print(string)
-
-    def run(self, broker, sub_topic, qq):
-        paho.disable_logger()
-        self.queue = qq
-        self.connect(broker, 1883, 60)
-        self.subscribe( sub_topic+"/#", 0)
-        rc = 0
-        while rc == 0:
-            rc = self.loop_start()
-        return rc
+  def run(self, broker, sub_topic, qq):
+    self.disable_logger()
+    self.queue = qq
+    self.connect(broker, 1883, 60)
+    self.subscribe( sub_topic+"/#", 0)
+    rc = 0
+    while rc == 0:
+      rc = self.loop_start()
+    return rc
 
 
 
@@ -300,6 +315,32 @@ class Pin_config:
     else:
        return(self.rootNode+"/")
 
+  def get_pin_conf_cmd(self):
+    cp ='{message:{fill}{align}{width}}'.format(message='CP',fill='z',align='<',width=2+14,)
+    cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=6,)
+    cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=32,)
+    cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=96,)
+    cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=8+8,)
+
+    return cp
+
+
+
+'''
+[
+CPzzrtyiooizzzzb
+A:
+zzzzzz
+C:
+cccccccccccccccccccccccccccccccc
+O:
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+DTH:
+cccccccccccccccc]
+'''
+
+
+
 
 
 
@@ -336,6 +377,8 @@ def main(argv=None):
 
   options.pin_config = Pin_config(options.config_folder)
   options.pin_config.load_config()
+  cp_cmd =options.pin_config.get_pin_conf_cmd()
+  print ( cp_cmd )
 
   
   options.nodes={}
