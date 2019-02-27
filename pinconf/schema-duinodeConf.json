@@ -74,7 +74,7 @@
                   "7; Sonde DHT7",
                   "8; Sonde DHT8"
                 ],
-                "default": "disable"
+                "default": "z; disable"
               },
               "prefix": {
                 "type": "boolean",
@@ -122,10 +122,10 @@
                 "type": "string",
                 "title": "Pin mode",
                 "enum": [
-                  "disable",
+                  "z; disable",
                   "a; Entrée analogique"
                 ],
-                "default": "disable"
+                "default": "z; disable"
               },
               "prefix": {
                 "type": "boolean",
@@ -166,7 +166,7 @@
                 "type": "string",
                 "title": "Pin mode",
                 "enum": [
-                  "disable",
+                  "z; disable",
                   "c; Custom in",
                   "d; Custom out"
                 ],
@@ -204,7 +204,7 @@
                 "type": "string",
                 "title": "Type radio",
                 "enum": [
-                  "disable",
+                  "z; disable",
                   "T; TriState",
                   "E; TriState EuroDomEst",
                   "H; Chacon DIO"
@@ -226,7 +226,7 @@
                 "type": "string",
                 "title": "Pin mode",
                 "enum": [
-                  "disable",
+                  "z; disable",
                   "t; Trans.",
                   "r; Reception",
                   "tr; Trans./Recep."

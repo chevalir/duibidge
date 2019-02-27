@@ -91,8 +91,8 @@ class Arduino_Node(object):
   def read_queue(self):
     task = self.request_queue.get(False)
     print( "@@TODO read_queue:"+str(task) )
-    if task == "CP":
-      self.write_serial(cmd_cp_default)
+    if 'CP' in task[0:2]:
+      self.write_serial(bytes(task))
     self.request_queue.task_done()
 
   def write_serial(self, request):
@@ -103,6 +103,7 @@ class Arduino_Node(object):
         time.sleep(0.1) ## delay before next bloc (if any)
       else :
         self.SerialPort.write('\n') ## all blocs sent, now send terminator
+    print( "write_serial end")
 
 
 ''' -----------------------------------------
@@ -338,12 +339,6 @@ class Pin_Config(object):
        return(self.rootNode+"/")
 
   def get_pin_conf_cmd(self):
-    """cp ='{message:{fill}{align}{width}}'.format(message='CP',fill='z',align='<',width=2+14,)
-    cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=6,)
-    cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=32,)
-    cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=96,)
-    cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=8+8,)
-    """
     cp = 'CP' + ''.join(self.cp_list)
     return cp
 
@@ -353,6 +348,7 @@ class Pin_Config(object):
 2019-02-27 07:10:39,851 | DEBUG | Thread-2 - arduidomx:248 - p1_Arduino 1 >> [DBG_todo:
 CPzzrtyiooizzzzbzzzazzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc]
 CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc
+
 [
 CPzzrtyiooizzzzb
 A:
@@ -403,20 +399,17 @@ def main(argv=None):
 
   options.pin_config = Pin_Config(options.config_folder)
   options.pin_config.load_config()
-  cp_cmd =options.pin_config.get_pin_conf_cmd()
-  print ( cp_cmd )
-
   
   options.nodes={}
-  arduino_id = options.pin_config.rootNode
+  arduino_id = options.pin_config.rootNode ## TODO manage several arduino
   options.arduino_queues={arduino_id:Queue()}
   aNode = Arduino_Node(options.Ardno_conf.Arduino_ports[1], options.arduino_queues[arduino_id], arduino_id)
   options.nodes.update({arduino_id:aNode})
   mqttc1 = MQTT_Client()
   rc = mqttc1.run("localhost", arduino_id, options.arduino_queues[arduino_id])
-
-
-
+  cp_cmd =options.pin_config.get_pin_conf_cmd()
+  ## print ( cp_cmd )
+  options.arduino_queues[arduino_id].put(cp_cmd)
   count = 0
   while count in range(10000):
     time.sleep(1)
