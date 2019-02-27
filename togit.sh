@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-rsync -r -update /Volumes/Home\ Directory/pidomo/jeedom/duibridge /Users/chevalir/Dev/Jeedom/GIT/plugins/duibridge
+#rsync -r -update /Volumes/RpiHome/pidomo/jeedom/duibridge /Users/chevalir/Dev/Jeedom/git-root/duibridge
+cp -r /Volumes/RpiHome/pidomo/jeedom/duibridge/* /Users/chevalir/Dev/Jeedom/git-root/duibridge/.

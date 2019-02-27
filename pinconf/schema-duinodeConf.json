@@ -109,12 +109,12 @@
                 "title": "Card pin",
                 "enum": [
                   "Select Pin",
-                  "A0; ANALOG IN A0",
-                  "A1; ANALOG IN A1",
-                  "A2; ANALOG IN A2",
-                  "A3; ANALOG IN A3",
-                  "A4; ANALOG IN A4",
-                  "A5; ANALOG IN A5"
+                  "ANALOG 0 (A0)",
+                  "ANALOG 1 (A1)",
+                  "ANALOG 2 (A2)",
+                  "ANALOG 3 (A3)",
+                  "ANALOG 4 (A4)",
+                  "ANALOG 5 (A5)"
                 ],
                 "default": "Select Pin"
               },

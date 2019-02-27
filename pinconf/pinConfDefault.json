@@ -2,10 +2,10 @@
   "analog": {
     "apins": [
       {
-        "card_pin": "A0; ANALOG IN A0", 
+        "card_pin": "ANALOG 3 (A3)", 
         "mode": "a; Entr\u00e9e analogique", 
         "prefix": true, 
-        "topic": "ananlog/A0"
+        "topic": "ananlog/speed"
       }
     ]
   }, 

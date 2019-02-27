@@ -18,8 +18,8 @@ __author__ = 'chevalir'
 logger = logging.getLogger("duibridge")
 options={}
 
-from_node={'init': "HELLO", 'conf_pins':"CP", 'set_pin':"SP" }
-to_node = [{"config_pin", 'CP'}]
+from_node = {'init': "HELLO" }
+to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "print_eeprom":"TS"}
 
 cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
 
@@ -105,9 +105,8 @@ class Arduino_Node(object):
         self.SerialPort.write('\n') ## all blocs sent, now send terminator
 
 
-
-
-
+''' -----------------------------------------
+'''
 class MQTT_Client(paho.Client):
     
   def on_connect(self, mqttc, obj, flags, rc):
@@ -203,7 +202,7 @@ class Arduino_Config(object):
 
 ''' -----------------------------------------
 '''
-class Pin_config:
+class Pin_Config(object):
 
   def __init__(self, conf_file_path, conf_save_path=None):
     self.conf_file_path=conf_file_path
@@ -213,6 +212,7 @@ class Pin_config:
       self.conf_save_path=conf_save_path
 
     self.digital_pins = {}
+    self.analog_pins = {}
     self.custom_vpins = {}
     self.r_radio_vpins = {}
     self.t_radio_vpins = {}
@@ -222,6 +222,7 @@ class Pin_config:
     self.APIN=6   #default value
     self.CPIN=32  #default value
     self.decode={}
+    self.cp_list = []
 
   def load_config(self):
     try:
@@ -239,59 +240,80 @@ class Pin_config:
     if cardType.find('UNO'):
       self.DPIN=14
       self.APIN=6
-      self.CPIN=32
+      self.CPIN=32    
+    for dp in range(self.DPIN + self.APIN + self.CPIN):
+      self.cp_list.append('z') 
     self.decode_digital()
+    self.decode_ana()
     self.decode_custom()
     self.decode_radio()
 
   ''' --------------------- '''
   def decode_digital(self):
-    dpins = self.decode['digitals']['dpins']
-    for pinNum in range(len(dpins)):
-      thepin = int(str(dpins[pinNum]['card_pin']).split(' ', 2)[1])
-      mode = dpins[pinNum]['mode'].split(";",1)[0]
-      topic = dpins[pinNum]['topic']
-      prefix = dpins[pinNum]['prefix']
+    pins = self.decode['digitals']['dpins']
+    pin_tag = 'card_pin'
+    for pinNum in range(len(pins)):
+      thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
+      mode = pins[pinNum]['mode'].split(";",1)[0]
+      topic = pins[pinNum]['topic']
+      prefix = pins[pinNum]['prefix']
       if mode=='t':
         self.transmeter_pin = thepin
       full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.digital_pins[thepin] = (mode, full_topic)
+      self.cp_list[thepin]=mode
       # @TODO manage output pin ( subscrib to topic )
   
   def decode_custom(self):
-    cpins = self.decode['custom']['cpins']
-    for pinNum in range(len(cpins)):
-      thepin = int(cpins[pinNum]['custom_pin'])
-      mode = cpins[pinNum]['mode'].split(";",1)[0]
-      topic = cpins[pinNum]['topic']
-      prefix = cpins[pinNum]['prefix']
+    pins = self.decode['custom']['cpins']
+    pin_tag = 'custom_pin'
+    for pinNum in range(len(pins)):
+      thepin = int(pins[pinNum][pin_tag])
+      mode = pins[pinNum]['mode'].split(";",1)[0]
+      topic = pins[pinNum]['topic']
+      prefix = pins[pinNum]['prefix']
       full_topic = self.get_topic_prefix(mode, prefix)+topic
-      self.custom_vpins[self.DPIN+self.APIN+thepin] = (mode, full_topic)
+      self.custom_vpins[self.DPIN + self.APIN + thepin] = (mode, full_topic)
+      self.cp_list[self.DPIN + self.APIN + thepin]=mode
     logger.debug(self.custom_vpins)
 
+  def decode_ana(self):
+    pins = self.decode['analog']['apins']
+    pin_tag = 'card_pin'
+    for pinNum in range(len(pins)):
+      thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
+      mode = pins[pinNum]['mode'].split(";",1)[0]
+      topic = pins[pinNum]['topic']
+      prefix = pins[pinNum]['prefix']
+      full_topic = self.get_topic_prefix(mode, prefix)+topic
+      self.analog_pins[self.DPIN + thepin] = (mode, full_topic)
+      self.cp_list[self.DPIN + thepin]=mode
+      # @TODO manage output pin ( subscrib to topic )
+
   def decode_radio(self):
-    rpins = self.decode['radio']['cradio']
-    for pinNum in range(len(rpins)):
+    pins = self.decode['radio']['cradio']
+    pin_tag = 'typeradio'
+    for pinNum in range(len(pins)):
       prefix_topic=''
-      typeradio = rpins[pinNum]['typeradio'].split(";",1)[0]
-      mode = rpins[pinNum]['mode'].split(";",1)[0]
-      topic = rpins[pinNum]['topic']
-      device = rpins[pinNum]['device']
-      prefix = rpins[pinNum]['prefix']
+      typeradio = pins[pinNum][pin_tag].split(";",1)[0]
+      mode = pins[pinNum]['mode'].split(";",1)[0]
+      topic = pins[pinNum]['topic']
+      device = pins[pinNum]['device']
+      prefix = pins[pinNum]['prefix']
       '''if len(device) < 2:
         device = "0"+device '''
       # @TODO change device format
-      radiocode = rpins[pinNum]['radiocode']
+      radiocode = pins[pinNum]['radiocode']
   
       if mode in ['r', 'tr']: 
         status_topic = self.get_topic_prefix('r', prefix)+topic
-        radiocode_key = '{}#{:0>2}'.format(rpins[pinNum]['radiocode'], device)
+        radiocode_key = '{}#{:0>2}'.format(pins[pinNum]['radiocode'], device)
         self.r_radio_vpins.update({radiocode_key:(device, status_topic)})
   
       if mode in ['t', 'tr']:
         action_topic = self.get_topic_prefix('t', prefix)+topic
         self.t_radio_vpins.update({action_topic:(device, radiocode)})
-        options.comJeedom.subscribe_topic( action_topic )
+        ## @TODO ???  options.comJeedom.subscribe_topic( action_topic )
     #logger.debug(self.r_radio_vpins)
     #logger.debug(self.t_radio_vpins)
 
@@ -316,17 +338,21 @@ class Pin_config:
        return(self.rootNode+"/")
 
   def get_pin_conf_cmd(self):
-    cp ='{message:{fill}{align}{width}}'.format(message='CP',fill='z',align='<',width=2+14,)
+    """cp ='{message:{fill}{align}{width}}'.format(message='CP',fill='z',align='<',width=2+14,)
     cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=6,)
     cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=32,)
     cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=96,)
     cp = cp + '{message:{fill}{align}{width}}'.format(message='',fill='a',align='<',width=8+8,)
-
+    """
+    cp = 'CP' + ''.join(self.cp_list)
     return cp
 
 
 
 '''
+2019-02-27 07:10:39,851 | DEBUG | Thread-2 - arduidomx:248 - p1_Arduino 1 >> [DBG_todo:
+CPzzrtyiooizzzzbzzzazzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc]
+CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc
 [
 CPzzrtyiooizzzzb
 A:
@@ -375,7 +401,7 @@ def main(argv=None):
   options.Ardno_conf = Arduino_Config(configFile)
   options.Ardno_conf.load_node_config()
 
-  options.pin_config = Pin_config(options.config_folder)
+  options.pin_config = Pin_Config(options.config_folder)
   options.pin_config.load_config()
   cp_cmd =options.pin_config.get_pin_conf_cmd()
   print ( cp_cmd )
