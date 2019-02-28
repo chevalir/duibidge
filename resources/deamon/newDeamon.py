@@ -17,6 +17,7 @@ import json
 __author__ = 'chevalir'
 logger = logging.getLogger("duibridge")
 options={}
+On_Off = ['Off','On']
 
 from_node = {'init': "HELLO" }
 to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "print_eeprom":"TS"}
@@ -26,9 +27,10 @@ cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzz
 ''' -----------------------------------------
 '''
 class Arduino_Node(object):
-  def __init__(self, port, queue, arduino_id):
+  def __init__(self, port, in_queue, arduino_id, out_queue):
     self.usb_port=port
-    self.request_queue=queue
+    self.request_queue=in_queue
+    self.send_queue=out_queue
     self.ID = arduino_id
     self.baud=115200
     
@@ -46,7 +48,11 @@ class Arduino_Node(object):
       time.sleep(1)
       if not self.request_queue.empty(): 
         self.read_queue()      
-      self.read_serial()
+      line = self.read_serial()
+      # parse_arduino_message if any
+      if line != "":
+        self.send_queue.put(line)
+        
 
   def init_serial_com(self):
     self.SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
@@ -72,7 +78,7 @@ class Arduino_Node(object):
       line = line.replace('\r', '')
       logger.debug("0_Arduino " + str(self.ID) + " >> [" + line + "]")
       if checktimer > 15:
-        logger.error("TIMEOUT d'attente du HELLO de l'arduino " + str(arduID))
+        logger.error("TIMEOUT d'attente du HELLO de l'arduino " + str(self.ID))
         quit()
     self.SerialPort.flush()
     self.SerialPort.flushInput()
@@ -87,6 +93,7 @@ class Arduino_Node(object):
       print("read_serial :"+line)
     return line
     ##print( "@@TODO read_serial"+line )
+
 
   def read_queue(self):
     task = self.request_queue.get(False)
@@ -127,6 +134,9 @@ class MQTT_Client(paho.Client):
     ##print(string)
     return
 
+  def publish_message(self, sub_topic , mess ):
+    publish( sub_topic, mess )
+  
   def run(self, broker, sub_topic, qq):
     self.disable_logger()
     self.queue = qq
@@ -136,7 +146,6 @@ class MQTT_Client(paho.Client):
     while rc == 0:
       rc = self.loop_start()
     return rc
-
 
 
 ''' -----------------------------------------
@@ -361,8 +370,59 @@ DTH:
 cccccccccccccccc]
 '''
 
+'''-------------------------------
+'''
+def send_to_topic(pin, value, lmqtt):
+  global options
+  logger.debug(str(pin) +" "+ str(value)+" "+ str(options.pin_config.DPIN))
+  thePin = int(pin)
+  try:
+    if thePin in range(1, options.pin_config.DPIN):
+      (mode, topic) = options.pin_config.digital_pins[thePin]
+    elif thePin in range(options.pin_config.DPIN+options.pin_config.APIN , options.pin_config.DPIN + options.pin_config.APIN+options.pin_config.CPIN):
+      (mode, topic) = options.pin_config.custom_vpins[thePin]
+    else :
+      logger.info("Others pins" )
 
+    logger.debug(mode+" "+topic)
 
+    if mode in ('c', 'i', 'j', 'y', 'a' ) :
+      lmqtt.publish_message(topic, value)
+    elif mode in ('r'):
+      send_radio_to_jeedom(topic, value, lmqtt)
+    else:
+      logger.error( 'unexpected result' )
+  except KeyError:
+    logger.error( "KeyError "+ str(options.pin_config.custom_vpins))
+
+'''-------------------------------
+'''                      
+def send_radio_to_topic(topic, value, mqtt):
+  global options
+  if "RFD" in value:
+    try:
+      device_on = False
+      device_split = value.split(':')
+      radiocode = device_split[1]
+      device = int (device_split[3]) + 1
+      device_on = device > 99
+      if device_on :
+        device = device - 100
+      value = On_Off[int(device_on)]
+      radiocode_key = '{}#{:0>2}'.format(radiocode, device)
+      if radiocode_key not in options.pin_config.r_radio_vpins:
+        radiocode_key = '{}#{:0>2}'.format(radiocode, 0)
+        if radiocode_key not in options.pin_config.r_radio_vpins:
+          logger.info("radio code={0} device ={1} not define in config ".format(radiocode, device) )
+          options.pin_config.add_radio_conf(radiocode, device, radiocode_key_gl)
+          value = "{0}={1}".format(device, value)      
+      (device, topic) = options.pin_config.r_radio_vpins.get(radiocode_key)
+      logger.info("radio code={0} device ={1} topic {2} ".format(radiocode_key, device, topic) )
+      mqtt.publish_message(topic, value)
+    except Exception as e:
+      logger.error( "send_radio_to_topic exception" )
+      logger.error( e )
+  return
 
 
 
@@ -402,18 +462,30 @@ def main(argv=None):
   
   options.nodes={}
   arduino_id = options.pin_config.rootNode ## TODO manage several arduino
-  options.arduino_queues={arduino_id:Queue()}
-  aNode = Arduino_Node(options.Ardno_conf.Arduino_ports[1], options.arduino_queues[arduino_id], arduino_id)
+  options.arduino_req_queues={arduino_id:Queue()}
+  options.arduino_send_queues={arduino_id:Queue()}
+
+  aNode = Arduino_Node(options.Ardno_conf.Arduino_ports[1], options.arduino_req_queues[arduino_id], arduino_id, options.arduino_send_queues[arduino_id])
   options.nodes.update({arduino_id:aNode})
   mqttc1 = MQTT_Client()
-  rc = mqttc1.run("localhost", arduino_id, options.arduino_queues[arduino_id])
+  rc = mqttc1.run("localhost", arduino_id, options.arduino_req_queues[arduino_id])
   cp_cmd =options.pin_config.get_pin_conf_cmd()
-  ## print ( cp_cmd )
-  options.arduino_queues[arduino_id].put(cp_cmd)
-  count = 0
-  while count in range(10000):
-    time.sleep(1)
-    count +=1
+  options.arduino_req_queues[arduino_id].put(cp_cmd)
+  while True :
+    time.sleep(0.1)
+    if not options.arduino_send_queues[arduino_id].empty(): 
+      task = str(options.arduino_send_queues[arduino_id].get(False))
+      print( "@@TODO read_queue:"+task )
+      if task.find(">>"):
+        (pin, value) = task.split(">>")
+        """value = value.replace("<<", '')
+        logger.debug(str(pin) +" "+ str(value))
+        send_to_topic(pin, value)"""
+
+
+      options.arduino_send_queues[arduino_id].task_done()
+
+    
   print("THE END")
 
 
