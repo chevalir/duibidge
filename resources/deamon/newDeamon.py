@@ -18,11 +18,14 @@ __author__ = 'chevalir'
 logger = logging.getLogger("duibridge")
 options={}
 On_Off = ['Off','On']
-
+mode_status=['r', 'c', 'a', 'y','i','j', range(1,8)]
 from_node = {'init': "HELLO" }
 to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "print_eeprom":"TS"}
 
 cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
+
+##  DBG_todo:SP130001
+
 
 ''' -----------------------------------------
 '''
@@ -33,6 +36,7 @@ class Arduino_Node(object):
     self.send_queue=out_queue
     self.ID = arduino_id
     self.baud=115200
+    
     
     thread = threading.Thread(target=self.run, args=())
     thread.daemon = True                            # Daemonize thread
@@ -53,9 +57,7 @@ class Arduino_Node(object):
       if line != "":
         self.send_queue.put(line)
         
-
-  def init_serial_com(self):
-    self.SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
+  def reset_with_DTR(self):
     self.SerialPort.flush()
     self.SerialPort.flushInput()
     ## hardware reset using DTR line
@@ -63,20 +65,24 @@ class Arduino_Node(object):
     time.sleep(0.030) # Read somewhere that 22ms is what the UI does.
     self.SerialPort.setDTR(False)
     time.sleep(0.200)
-    
     self.SerialPort.flush()
     self.SerialPort.flushInput()
+
+  def init_serial_com(self):
+    self.SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
     logger.debug("Arduino {} wainting for HELLO".format(self.ID))
+    self.reset_with_DTR()
     line = ""
     checktimer = 0
     while line.find(from_node['init']) < 0:
       time.sleep(1)
       checktimer += 1
       line = self.read_serial()
-      
       line = line.replace('\n', '')
       line = line.replace('\r', '')
       logger.debug("0_Arduino " + str(self.ID) + " >> [" + line + "]")
+      if checktimer in [3,6,9,12]:
+        self.reset_with_DTR()
       if checktimer > 15:
         logger.error("TIMEOUT d'attente du HELLO de l'arduino " + str(self.ID))
         quit()
@@ -97,7 +103,7 @@ class Arduino_Node(object):
 
   def read_queue(self):
     task = self.request_queue.get(False)
-    print( "@@TODO read_queue:"+str(task) )
+    print( "read_queue:"+str(task) )
     if 'CP' in task[0:2]:
       self.write_serial(bytes(task))
     self.request_queue.task_done()
@@ -125,23 +131,30 @@ class MQTT_Client(paho.Client):
     self.queue.put(str(msg.payload))
 
   def on_publish(self, mqttc, obj, mid):
-    print("on_publish mid: "+str(mid))
+    ##print("on_publish mid: "+str(obj))
+    return
 
   def on_subscribe(self, mqttc, obj, mid, granted_qos):
-    print("on_subscribe: "+str(mid)+" "+str(granted_qos))
+    ###print("on_subscribe: "+str(mid)+" "+str(granted_qos))
+    return
 
   def on_log(self, mqttc, obj, level, string):
     ##print(string)
     return
 
   def publish_message(self, sub_topic , mess ):
-    publish( sub_topic, mess )
-  
+    self.publish( sub_topic, mess )
+
+  def subscribe_topics(self, list_of_topic):
+    print(list_of_topic)
+    for topic in list_of_topic:
+      self.subscribe(topic)
+
   def run(self, broker, sub_topic, qq):
     self.disable_logger()
     self.queue = qq
     self.connect(broker, 1883, 60)
-    self.subscribe( sub_topic+"/#", 0)
+    ##self.subscribe( sub_topic+"/#", 0)
     rc = 0
     while rc == 0:
       rc = self.loop_start()
@@ -228,11 +241,11 @@ class Pin_Config(object):
     self.t_radio_vpins = {}
     self.transmeter_pin = -1
     self.rootNode=''
-    self.DPIN=14  #default value
-    self.APIN=6   #default value
-    self.CPIN=32  #default value
+    self.DPIN=14  #default Digital Pin number
+    self.APIN=6   #default Alalog pin number 
+    self.CPIN=32  #default Custom pin number
     self.decode={}
-    self.cp_list = []
+    self.cp_list = []  # use to send CP command to arduino CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc
 
   def load_config(self):
     try:
@@ -271,7 +284,8 @@ class Pin_Config(object):
         self.transmeter_pin = thepin
       full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.digital_pins[thepin] = (mode, full_topic)
-      self.cp_list[thepin]=mode
+      self.cp_list[thepin]=mode        
+
       # @TODO manage output pin ( subscrib to topic )
   
   def decode_custom(self):
@@ -285,7 +299,7 @@ class Pin_Config(object):
       full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.custom_vpins[self.DPIN + self.APIN + thepin] = (mode, full_topic)
       self.cp_list[self.DPIN + self.APIN + thepin]=mode
-    logger.debug(self.custom_vpins)
+    ##logger.debug(self.custom_vpins)
 
   def decode_ana(self):
     pins = self.decode['analog']['apins']
@@ -299,6 +313,7 @@ class Pin_Config(object):
       self.analog_pins[self.DPIN + thepin] = (mode, full_topic)
       self.cp_list[self.DPIN + thepin]=mode
       # @TODO manage output pin ( subscrib to topic )
+      ##logger.debug(self.analog_pins)
 
   def decode_radio(self):
     pins = self.decode['radio']['cradio']
@@ -324,8 +339,8 @@ class Pin_Config(object):
         action_topic = self.get_topic_prefix('t', prefix)+topic
         self.t_radio_vpins.update({action_topic:(device, radiocode)})
         ## @TODO ???  options.comJeedom.subscribe_topic( action_topic )
-    #logger.debug(self.r_radio_vpins)
-    #logger.debug(self.t_radio_vpins)
+    ##logger.debug(self.r_radio_vpins)
+    ##logger.debug(self.t_radio_vpins)
 
   def add_radio_conf(self, radiocode, device, radiocode_key):
     status_topic='radio/'+radiocode+"/"+str(device)
@@ -337,10 +352,11 @@ class Pin_Config(object):
     logger.info(" new topic added " + status_topic)
     self.r_radio_vpins.update({radiocode_key:(device, status_topic)})
 
+  
   def get_topic_prefix(self, mode, enable):
     global options
     if enable:
-      if mode in ['r', 'c', 'a', 'y','i','j', range(1,8)]: 
+      if mode in mode_status: 
         return(self.rootNode+"/"+'status/') 
       else:
         return(self.rootNode+"/"+'action/')
@@ -386,10 +402,11 @@ def send_to_topic(pin, value, lmqtt):
 
     logger.debug(mode+" "+topic)
 
-    if mode in ('c', 'i', 'j', 'y', 'a' ) :
-      lmqtt.publish_message(topic, value)
-    elif mode in ('r'):
-      send_radio_to_jeedom(topic, value, lmqtt)
+    if mode in mode_status :
+      if mode in ('r'):
+        send_radio_to_jeedom(topic, value, lmqtt)
+      else:      
+        lmqtt.publish_message(topic, value)      
     else:
       logger.error( 'unexpected result' )
   except KeyError:
@@ -462,28 +479,41 @@ def main(argv=None):
   
   options.nodes={}
   arduino_id = options.pin_config.rootNode ## TODO manage several arduino
-  options.arduino_req_queues={arduino_id:Queue()}
-  options.arduino_send_queues={arduino_id:Queue()}
+  options.to_arduino_queues={arduino_id:Queue()}
+  options.from_arduino_queues={arduino_id:Queue()}
 
-  aNode = Arduino_Node(options.Ardno_conf.Arduino_ports[1], options.arduino_req_queues[arduino_id], arduino_id, options.arduino_send_queues[arduino_id])
+  aNode = Arduino_Node(options.Ardno_conf.Arduino_ports[1], options.to_arduino_queues[arduino_id], arduino_id, options.from_arduino_queues[arduino_id])
   options.nodes.update({arduino_id:aNode})
   mqttc1 = MQTT_Client()
-  rc = mqttc1.run("localhost", arduino_id, options.arduino_req_queues[arduino_id])
+  rc = mqttc1.run("localhost", arduino_id, options.to_arduino_queues[arduino_id])
   cp_cmd =options.pin_config.get_pin_conf_cmd()
-  options.arduino_req_queues[arduino_id].put(cp_cmd)
+  options.to_arduino_queues[arduino_id].put(cp_cmd)
+  ## subscribe to digital topics if any
+  print(options.pin_config.digital_pins)
+  mode_topics = options.pin_config.digital_pins.values()
+  for m_t in mode_topics:
+    (mode, topic) = m_t
+    if not ( mode in mode_status ):
+      mqttc1.subscribe(topic)
+      print('subscribe :'+topic)
+    else:
+      print('not subscribe {} {}:'.format(mode, topic))
+  ## subscribe to radio topics
+  topics = options.pin_config.t_radio_vpins.keys()
+  mqttc1.subscribe_topics(topics)
+
+
   while True :
     time.sleep(0.1)
-    if not options.arduino_send_queues[arduino_id].empty(): 
-      task = str(options.arduino_send_queues[arduino_id].get(False))
-      print( "@@TODO read_queue:"+task )
-      if task.find(">>"):
-        (pin, value) = task.split(">>")
-        """value = value.replace("<<", '')
+    if not options.from_arduino_queues[arduino_id].empty(): 
+      mess = str(options.from_arduino_queues[arduino_id].get(False))
+      print( "from_arduino_queues:"+mess )
+      if '>>' in mess[:6]:
+        (pin, value) = mess.split(">>")
+        value = value.replace("<<", '')
         logger.debug(str(pin) +" "+ str(value))
-        send_to_topic(pin, value)"""
-
-
-      options.arduino_send_queues[arduino_id].task_done()
+        send_to_topic(pin, value, mqttc1)
+      options.from_arduino_queues[arduino_id].task_done()
 
     
   print("THE END")
