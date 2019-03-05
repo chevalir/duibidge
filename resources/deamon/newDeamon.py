@@ -24,7 +24,7 @@ to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "pr
 
 cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
 
-##  DBG_todo:SP130001
+##  DBG_todo:SP130001    'SP130001'   'SP{:02}{:04}'.format(13,1)
 
 
 ''' -----------------------------------------
@@ -36,8 +36,7 @@ class Arduino_Node(object):
     self.send_queue=out_queue
     self.ID = arduino_id
     self.baud=115200
-    
-    
+	    
     thread = threading.Thread(target=self.run, args=())
     thread.daemon = True                            # Daemonize thread
     thread.start()                                  # Start the execution
@@ -84,12 +83,11 @@ class Arduino_Node(object):
       if checktimer in [3,6,9,12]:
         self.reset_with_DTR()
       if checktimer > 15:
-        logger.error("TIMEOUT d'attente du HELLO de l'arduino " + str(self.ID))
+        logger.error("Arduino {} TIMEOUT <HELLO> not received ".format(self.ID))
         quit()
     self.SerialPort.flush()
     self.SerialPort.flushInput()
-    logger.debug("Arduino " + str(self.ID) + " ready for action")
-    ##open serial port @@TODO
+    logger.debug("Arduino {} ready for action".format(self.ID))
   
   def read_serial(self):
     line = self.SerialPort.readline()

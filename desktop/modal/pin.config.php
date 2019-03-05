@@ -78,8 +78,8 @@ if (!isConnect('admin')) {
           title: "Pins Configuration",
           format: "tabs",
           items: {
-            title: "Configuration",
-            headerTemplate: "{{i}} - {{self.name}}",
+            title: "Node",
+            headerTemplate: "{{i}} - {{self.nodeName}}",
             $ref: "plugins/duibridge/pinconf/schema-duinodeConf.json"
           }
         },
