@@ -24,8 +24,25 @@ to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "pr
 
 cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
 
+##  DBG_todo:SP130001
 ##  DBG_todo:SP130001    'SP130001'   'SP{:02}{:04}'.format(13,1)
 
+
+def build_command(topic, value):
+  mode_topics = options.pin_config.digital_pins.values()
+  '''
+  >>> bb = aa.values()
+  >>> bb.index('oo')
+  1
+  >>> cc = aa.keys()
+  >>> bb.index('oo')
+  '''
+  if topic in mode_topics:
+    pos = mode_topics.index(topic)
+    pin = options.pin_config.digital_pins.keys()[pos]
+    cmd = "SP{:0>2}{:0>4}".format(pin,value)
+  return 
+a tester
 
 ''' -----------------------------------------
 '''
@@ -36,7 +53,8 @@ class Arduino_Node(object):
     self.send_queue=out_queue
     self.ID = arduino_id
     self.baud=115200
-	    
+    
+    
     thread = threading.Thread(target=self.run, args=())
     thread.daemon = True                            # Daemonize thread
     thread.start()                                  # Start the execution
@@ -83,26 +101,27 @@ class Arduino_Node(object):
       if checktimer in [3,6,9,12]:
         self.reset_with_DTR()
       if checktimer > 15:
-        logger.error("Arduino {} TIMEOUT <HELLO> not received ".format(self.ID))
+        logger.error("TIMEOUT d'attente du HELLO de l'arduino " + str(self.ID))
         quit()
     self.SerialPort.flush()
     self.SerialPort.flushInput()
-    logger.debug("Arduino {} ready for action".format(self.ID))
+    logger.debug("Arduino " + str(self.ID) + " ready for action")
+    ##open serial port @@TODO
   
   def read_serial(self):
     line = self.SerialPort.readline()
     if line != '':
       line = line.replace('\n', '')
       line = line.replace('\r', '')
-      print("read_serial :"+line)
+      logger.debug("read_serial :"+line)
     return line
     ##print( "@@TODO read_serial"+line )
 
 
   def read_queue(self):
     task = self.request_queue.get(False)
-    print( "read_queue:"+str(task) )
-    if 'CP' in task[0:2]:
+    logger.debug( "read_queue:"+str(task) )
+    if 'CP' in value[0:2]:
       self.write_serial(bytes(task))
     self.request_queue.task_done()
 
@@ -117,6 +136,7 @@ class Arduino_Node(object):
     print( "write_serial end")
 
 
+
 ''' -----------------------------------------
 '''
 class MQTT_Client(paho.Client):
@@ -125,7 +145,8 @@ class MQTT_Client(paho.Client):
     print("on_connect rc: "+str(rc))
 
   def on_message(self, mqttc, obj, msg):
-    print("on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
+    logger.debug("on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
+    cmd = build_command( msg.topic, msg.payload )
     self.queue.put(str(msg.payload))
 
   def on_publish(self, mqttc, obj, mid):
@@ -256,7 +277,7 @@ class Pin_Config(object):
     except Exception as e:
       print(e)
       return
-    self.rootNode = str(self.decode['nodeName'])
+    self.rootNode = str(self.decode['name'])
     cardType = self.decode['card']
     if cardType.find('UNO'):
       self.DPIN=14
@@ -390,6 +411,7 @@ def send_to_topic(pin, value, lmqtt):
   global options
   logger.debug(str(pin) +" "+ str(value)+" "+ str(options.pin_config.DPIN))
   thePin = int(pin)
+  topic="not found"
   try:
     if thePin in range(1, options.pin_config.DPIN):
       (mode, topic) = options.pin_config.digital_pins[thePin]
@@ -398,17 +420,18 @@ def send_to_topic(pin, value, lmqtt):
     else :
       logger.info("Others pins" )
 
-    logger.debug(mode+" "+topic)
+    
 
     if mode in mode_status :
       if mode in ('r'):
         send_radio_to_jeedom(topic, value, lmqtt)
       else:      
-        lmqtt.publish_message(topic, value)      
+        lmqtt.publish_message(topic, value)    
     else:
-      logger.error( 'unexpected result' )
+      logger.error( 'unexpected mode:'+mode )
   except KeyError:
     logger.error( "KeyError "+ str(options.pin_config.custom_vpins))
+  logger.debug("send_to_topic {} {}  done".format(value, topic) )
 
 '''-------------------------------
 '''                      
@@ -487,6 +510,7 @@ def main(argv=None):
   cp_cmd =options.pin_config.get_pin_conf_cmd()
   options.to_arduino_queues[arduino_id].put(cp_cmd)
   ## subscribe to digital topics if any
+  print("----\n\n")
   print(options.pin_config.digital_pins)
   mode_topics = options.pin_config.digital_pins.values()
   for m_t in mode_topics:

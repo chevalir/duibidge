@@ -1,9 +1,6 @@
 {
-  "title": "Node",
-  "type": "object",
-  "id": "node",	
   "properties": {
-    "nodeName": {
+    "name": {
       "type": "string",
       "title": "Node name",
       "description": "(racine de tous les topic <node name>/<action or status>/...)"

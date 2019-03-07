@@ -36,7 +36,7 @@ if (!isConnect('admin')) {
       // and to provide a "Restore to Default" button.
      var starting_value = [
         {
-        "nodeName": "Arduino1",
+        "name": "Arduino1",
         "card": "UNO, duemilanove328, leo, nano168, nano328, mega2560",
         "port": "USB1",
         "digitals": {
@@ -78,8 +78,8 @@ if (!isConnect('admin')) {
           title: "Pins Configuration",
           format: "tabs",
           items: {
-            title: "Node",
-            headerTemplate: "{{i}} - {{self.nodeName}}",
+            title: "Configuration",
+            headerTemplate: "{{i}} - {{self.name}}",
             $ref: "plugins/duibridge/pinconf/schema-duinodeConf.json"
           }
         },
@@ -88,8 +88,8 @@ if (!isConnect('admin')) {
         startval: starting_value,
         disable_edit_json: true,
         disable_properties: true,
-        theme: 'bootstrap3',
-        iconlib: 'bootstrap3',
+        theme: 'bootstrap2',
+        iconlib: 'bootstrap2',
         // Disable additional properties
         no_additional_properties: true,
         
