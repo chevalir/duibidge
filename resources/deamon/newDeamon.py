@@ -29,20 +29,35 @@ cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzz
 
 
 def build_command(topic, value):
-  mode_topics = options.pin_config.digital_pins.values()
   '''
   >>> bb = aa.values()
   >>> bb.index('oo')
   1
   >>> cc = aa.keys()
   >>> bb.index('oo')
+  @TODO tester !!
   '''
+  pin=-1
+  cmd=""
+  mode_topics = options.pin_config.digital_pins.values()
   if topic in mode_topics:
-    pos = mode_topics.index(topic)
-    pin = options.pin_config.digital_pins.keys()[pos]
-    cmd = "SP{:0>2}{:0>4}".format(pin,value)
-  return 
-a tester
+    index = mode_topics.index(topic)
+    pin = options.pin_config.digital_pins.keys()[index]
+  else :
+    mode_topics = options.pin_config.custom_vpins.values()
+	  if topic in mode_topics:
+      index = mode_topics.index(topic)
+      pin = options.pin_config.custom_vpins.keys()[index]
+	if pin > -1:    
+	  cmd = "SP{:0>2}{:0>4}".format(pin,value)
+	else:
+	  mode_topics = options.pin_config.r_radio_vpins.values()
+	  if topic in mode_topics:
+      index = mode_topics.index(topic)
+      pin = options.pin_config.r_radio_vpins.keys()[index]
+      cmd=value
+	  
+  return cmd
 
 ''' -----------------------------------------
 '''
@@ -419,9 +434,6 @@ def send_to_topic(pin, value, lmqtt):
       (mode, topic) = options.pin_config.custom_vpins[thePin]
     else :
       logger.info("Others pins" )
-
-    
-
     if mode in mode_status :
       if mode in ('r'):
         send_radio_to_jeedom(topic, value, lmqtt)
