@@ -88,8 +88,8 @@ if (!isConnect('admin')) {
         startval: starting_value,
         disable_edit_json: true,
         disable_properties: true,
-        theme: 'bootstrap2',
-        iconlib: 'bootstrap2',
+        theme: 'bootstrap3',
+        iconlib: 'bootstrap3',
         // Disable additional properties
         no_additional_properties: true,
         

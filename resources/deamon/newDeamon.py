@@ -18,41 +18,40 @@ __author__ = 'chevalir'
 logger = logging.getLogger("duibridge")
 options={}
 On_Off = ['Off','On']
-mode_status=['r', 'c', 'a', 'y','i','j', range(1,8)]
 from_node = {'init': "HELLO" }
 to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "print_eeprom":"TS"}
+cmd_cp_default = "CPzzrtyiooizzzozzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
 
-cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
-
-##  DBG_todo:SP130001
+##  DBG_todo:SP130001     SP130001_OK
 ##  DBG_todo:SP130001    'SP130001'   'SP{:02}{:04}'.format(13,1)
 
 
+
 def build_command(topic, value):
-  pin=-1
-  cmd=value
-  '''mode_topics = options.pin_config.digital_pins.values()'''
-  pin = options.pin_config.all_pins[topic]
-  cmd = "SP{:0>2}{:0>4}".format(pin,value)
-  '''print(mode_topics)
-  if topic in mode_topics:
-    index = mode_topics.index(topic)
-    pin = options.pin_config.digital_pins.keys()[index]
-  else :
-    mode_topics = options.pin_config.custom_vpins.values()
-    if topic in mode_topics:
-      index = mode_topics.index(topic)
-      pin = options.pin_config.custom_vpins.keys()[index]
-  if pin > -1:    
-    cmd = "SP{:0>2}{:0>4}".format(pin,value)
-  else:
-    mode_topics = options.pin_config.r_radio_vpins.values()
-    if topic in mode_topics:
-      index = mode_topics.index(topic)
-      pin = options.pin_config.r_radio_vpins.keys()[index]
-      cmd=value
-  '''
-  logger.debug("build_command topic: {}, value: {}, cmd: {}, pin {})".format(topic, value, cmd, pin))
+  try:
+    pin_num = options.pin_config.all_topics[topic]
+    pin_info = options.pin_config.all_pins[pin_num]
+    if pin_info.mode in Pin_def.mode_out_time:
+      cmd = "SP{:0>2}{:0>4}".format(pin_num,value)
+    if pin_info.mode in Pin_def.mode_out:
+      cmd = "SP{:0>2}{}".format(pin_num,value)
+    if pin_info.mode in Pin_def.mode_pwm:
+      cmd = "SP{:0>2}{:0>3}".format(pin_num,value)
+    if pin_info.mode in Pin_def.mode_custom_out:
+      cmd = "SP{:0>2}{:0>10}".format(pin_num,value)  
+    pass
+  except:
+    if topic in options.pin_config.all_topics.keys():
+      logger.debug("topic  found "+topic)
+    else:
+      logger.debug("topic not found "+topic)
+    cmd=value
+    pass
+  finally:
+    logger.debug("build_command cmd="+cmd)
+    pass
+
+  logger.debug("build_command topic: {} value: {} cmd: {}".format(topic, value, cmd))
   return cmd
 
 ''' -----------------------------------------
@@ -73,7 +72,7 @@ class Arduino_Node(object):
 
   def run(self):
     '''Method that runs forever'''
-    print( "RUN" )
+    logger.debug( "Arduino_Node::RUN" )
     self.init_serial_com()
     while True:
       # Do something
@@ -134,6 +133,8 @@ class Arduino_Node(object):
     logger.debug( "read_queue:"+str(task) )
     if 'CP' in task[0:2]:
       self.write_serial(bytes(task))
+    if 'SP' in task[0:2]:
+      self.write_serial(bytes(task))
     self.request_queue.task_done()
 
   def write_serial(self, request):
@@ -144,8 +145,7 @@ class Arduino_Node(object):
         time.sleep(0.1) ## delay before next bloc (if any)
       else :
         self.SerialPort.write('\n') ## all blocs sent, now send terminator
-    print( "write_serial end")
-
+    logger.debug( "write_serial end")
 
 
 ''' -----------------------------------------
@@ -153,12 +153,11 @@ class Arduino_Node(object):
 class MQTT_Client(paho.Client):
     
   def on_connect(self, mqttc, obj, flags, rc):
-    print("on_connect rc: "+str(rc))
+    logger.debug("on_connect rc: "+str(rc))
 
   def on_message(self, mqttc, obj, msg):
+    self.queue.put(build_command( msg.topic, msg.payload ))
     logger.debug("on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
-    cmd = build_command( msg.topic, msg.payload )
-    self.queue.put(str(msg.payload))
 
   def on_publish(self, mqttc, obj, mid):
     ##print("on_publish mid: "+str(obj))
@@ -176,7 +175,7 @@ class MQTT_Client(paho.Client):
     self.publish( sub_topic, mess )
 
   def subscribe_topics(self, list_of_topic):
-    print(list_of_topic)
+    ##logger.debug(list_of_topic)
     for topic in list_of_topic:
       self.subscribe(topic)
 
@@ -236,8 +235,8 @@ class Arduino_Config(object):
     
     else:
       # config file not found, set default values
-      print "Error: Configuration file not found (" + configFile + ")"
-      logger.error("Error: Configuration file not found (" + configFile + ") Line: ")
+      print "Error: Configuration file not found (" + self.conf_file_path  + ")"
+      logger.error("Error: Configuration file not found (" + self.conf_file_path  + ") Line: ")
   
   ''' ...............................................'''
   def read_config_item(self, xmlDom, configItem):
@@ -255,6 +254,23 @@ class Arduino_Config(object):
 
 ''' -----------------------------------------
 '''
+class Pin_def:
+  digital=1
+  analog=2
+  custom=3
+  mode_status=['r', 'c', 'a', 'y','i','j', range(1,8)]
+  mode_out=['o', 'i', 'y' 'e'] 
+  mode_out_time=[ 'x', 'v', 'u', 'b' ]
+  mode_pwm=[ 'p' ]
+  mode_custom_out=['d']
+
+  def __init__(self, **kwds):
+    self.__dict__.update(kwds)
+  def __repr__(self):
+    return str(self.__dict__)
+
+''' -----------------------------------------
+'''
 class Pin_Config(object):
 
   def __init__(self, conf_file_path, conf_save_path=None):
@@ -264,12 +280,13 @@ class Pin_Config(object):
     else:
       self.conf_save_path=conf_save_path
 
-    self.digital_pins = {}
-    self.analog_pins = {}
-    self.custom_vpins = {}
+    ##self.digital_pins = {}
+    ##self.analog_pins = {}
+    ##self.custom_vpins = {}
     self.r_radio_vpins = {}
     self.t_radio_vpins = {}
     self.all_pins = {}
+    self.all_topics = {}
     self.transmeter_pin = -1
     self.rootNode=''
     self.DPIN=14  #default Digital Pin number
@@ -302,7 +319,6 @@ class Pin_Config(object):
     self.decode_custom()
     self.decode_radio()
 
-  ''' --------------------- '''
   def decode_digital(self):
     pins = self.decode['digitals']['dpins']
     pin_tag = 'card_pin'
@@ -314,25 +330,11 @@ class Pin_Config(object):
       if mode=='t':
         self.transmeter_pin = thepin
       full_topic = self.get_topic_prefix(mode, prefix)+topic
-      self.digital_pins[thepin] = (mode, full_topic)
+      self.all_pins[thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
+      self.all_topics[full_topic]=thepin
+      ##self.digital_pins[thepin] = (mode, full_topic)
       self.cp_list[thepin]=mode
-      self.all_pins[topic]=thepin        
-
-      # @TODO manage output pin ( subscrib to topic )
   
-  def decode_custom(self):
-    pins = self.decode['custom']['cpins']
-    pin_tag = 'custom_pin'
-    for pinNum in range(len(pins)):
-      thepin = int(pins[pinNum][pin_tag])
-      mode = pins[pinNum]['mode'].split(";",1)[0]
-      topic = pins[pinNum]['topic']
-      prefix = pins[pinNum]['prefix']
-      full_topic = self.get_topic_prefix(mode, prefix)+topic
-      self.custom_vpins[self.DPIN + self.APIN + thepin] = (mode, full_topic)
-      self.cp_list[self.DPIN + self.APIN + thepin]=mode
-    ##logger.debug(self.custom_vpins)
-
   def decode_ana(self):
     pins = self.decode['analog']['apins']
     pin_tag = 'card_pin'
@@ -342,17 +344,35 @@ class Pin_Config(object):
       topic = pins[pinNum]['topic']
       prefix = pins[pinNum]['prefix']
       full_topic = self.get_topic_prefix(mode, prefix)+topic
-      self.analog_pins[self.DPIN + thepin] = (mode, full_topic)
+      self.all_pins[self.DPIN + thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
+      self.all_topics[full_topic]=self.DPIN + thepin
+
+      ##self.analog_pins[self.DPIN + thepin] = (mode, full_topic)
       self.cp_list[self.DPIN + thepin]=mode
       # @TODO manage output pin ( subscrib to topic )
       ##logger.debug(self.analog_pins)
 
+  def decode_custom(self):
+    pins = self.decode['custom']['cpins']
+    pin_tag = 'custom_pin'
+    for pinNum in range(len(pins)):
+      thepin = int(pins[pinNum][pin_tag])
+      mode = pins[pinNum]['mode'].split(";",1)[0]
+      topic = pins[pinNum]['topic']
+      prefix = pins[pinNum]['prefix']
+      full_topic = self.get_topic_prefix(mode, prefix)+topic
+      self.all_pins[self.DPIN + self.APIN + thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.custom)
+      self.all_topics[full_topic]=self.DPIN + self.APIN + thepin
+      ### self.custom_vpins[self.DPIN + self.APIN + thepin] = (mode, full_topic)
+      self.cp_list[self.DPIN + self.APIN + thepin]=mode
+    ##logger.debug(self.custom_vpins)
+
   def decode_radio(self):
     pins = self.decode['radio']['cradio']
-    pin_tag = 'typeradio'
+    ## @TODO del  pin_tag = 'typeradio'
     for pinNum in range(len(pins)):
-      prefix_topic=''
-      typeradio = pins[pinNum][pin_tag].split(";",1)[0]
+      ## @TODO del   prefix_topic=''
+      ## @TODO del   typeradio = pins[pinNum][pin_tag].split(";",1)[0]
       mode = pins[pinNum]['mode'].split(";",1)[0]
       topic = pins[pinNum]['topic']
       device = pins[pinNum]['device']
@@ -366,7 +386,7 @@ class Pin_Config(object):
         status_topic = self.get_topic_prefix('r', prefix)+topic
         radiocode_key = '{}#{:0>2}'.format(pins[pinNum]['radiocode'], device)
         self.r_radio_vpins.update({radiocode_key:(device, status_topic)})
-  
+
       if mode in ['t', 'tr']:
         action_topic = self.get_topic_prefix('t', prefix)+topic
         self.t_radio_vpins.update({action_topic:(device, radiocode)})
@@ -388,7 +408,7 @@ class Pin_Config(object):
   def get_topic_prefix(self, mode, enable):
     global options
     if enable:
-      if mode in mode_status: 
+      if mode in Pin_def.mode_status: 
         return(self.rootNode+"/"+'status/') 
       else:
         return(self.rootNode+"/"+'action/')
@@ -400,52 +420,28 @@ class Pin_Config(object):
     return cp
 
 
-
-'''
-2019-02-27 07:10:39,851 | DEBUG | Thread-2 - arduidomx:248 - p1_Arduino 1 >> [DBG_todo:
-CPzzrtyiooizzzzbzzzazzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc]
-CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc
-
-[
-CPzzrtyiooizzzzb
-A:
-zzzzzz
-C:
-cccccccccccccccccccccccccccccccc
-O:
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-DTH:
-cccccccccccccccc]
-'''
-
-'''-------------------------------
-'''
-def send_to_topic(pin, value, lmqtt):
+'''-------------------------------'''                      
+def send_to_topic(pin_num, value, lmqtt):
   global options
-  logger.debug(str(pin) +" "+ str(value)+" "+ str(options.pin_config.DPIN))
-  thePin = int(pin)
-  topic="not found"
+  logger.debug(str(pin_num) +" "+ str(value)+" "+ str(options.pin_config.DPIN))
+  thePin = int(pin_num)
   try:
-    if thePin in range(1, options.pin_config.DPIN):
-      (mode, topic) = options.pin_config.digital_pins[thePin]
-    elif thePin in range(options.pin_config.DPIN+options.pin_config.APIN , options.pin_config.DPIN + options.pin_config.APIN+options.pin_config.CPIN):
-      (mode, topic) = options.pin_config.custom_vpins[thePin]
+    if thePin in options.pin_config.all_pins.keys():
+      pin_info = options.pin_config.all_pins[thePin]
+      if pin_info.mode in Pin_def.mode_status :
+        if pin_info.mode in ('r'):
+          send_radio_to_topic(pin_info.topic, value, lmqtt)
+        else:      
+          lmqtt.publish_message(pin_info.topic, value)    
+      else:
+        logger.error( 'unexpected mode:'+pin_info.mode )
     else :
-      logger.info("arduino send value for Pin undefine in conf pin:{} value:{}".format(pin,value) )
-      return
-    if mode in mode_status :
-      if mode in ('r'):
-        send_radio_to_jeedom(topic, value, lmqtt)
-      else:      
-        lmqtt.publish_message(topic, value)    
-    else:
-      logger.error( 'unexpected mode:'+mode )
+      logger.info("arduino send value for Pin undefine in conf pin:{} value:{}".format(pin_num,value) )
   except KeyError:
-    logger.error( "KeyError "+ str(options.pin_config.custom_vpins))
-  logger.debug("send_to_topic {} {}  done".format(value, topic) )
+    logger.error( "KeyError not found {} in {}".format(pin_num,  str(options.pin_config.all_pins.keys())))
+  
 
-'''-------------------------------
-'''                      
+'''-------------------------------'''                      
 def send_radio_to_topic(topic, value, mqtt):
   global options
   if "RFD" in value:
@@ -463,7 +459,7 @@ def send_radio_to_topic(topic, value, mqtt):
         radiocode_key = '{}#{:0>2}'.format(radiocode, 0)
         if radiocode_key not in options.pin_config.r_radio_vpins:
           logger.info("radio code={0} device ={1} not define in config ".format(radiocode, device) )
-          options.pin_config.add_radio_conf(radiocode, device, radiocode_key_gl)
+          options.pin_config.add_radio_conf(radiocode, device, radiocode_key)
           value = "{0}={1}".format(device, value)      
       (device, topic) = options.pin_config.r_radio_vpins.get(radiocode_key)
       logger.info("radio code={0} device ={1} topic {2} ".format(radiocode_key, device, topic) )
@@ -483,21 +479,25 @@ def main(argv=None):
   myrootpath = os.path.dirname(os.path.realpath(__file__)) + "/"
   print ( "START DEAMON " )
   (options, args) = cli_parser(argv)
-  print(options)
+  ##print(options)
   write_pid(options.pid_path)
   LOG_FILENAME = myrootpath + '../../../../log/duibridge_daemon'
-  ## formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(threadName)s - %(module)s:%(lineno)d - %(message)s')
   formatter = logging.Formatter('%(threadName)s-%(asctime)s| %(levelname)s | %(lineno)d | %(message)s')
-  filehandler = logging.FileHandler(LOG_FILENAME)
+  '''filehandler = logging.FileHandler(LOG_FILENAME)
   filehandler.setFormatter(formatter)
+  logger.addHandler(filehandler)
+  '''
+
   console = logging.StreamHandler()
   console.setFormatter(formatter)
+  logger.addHandler(console)
+  logger.setLevel(logging.DEBUG)
+
   ##sys.stderr = open(LOG_FILENAME + "_stderr", 'a', 1)
 
   # options.loglevel.upper()
-  logger.setLevel(logging.getLevelName(options.loglevel.upper()))
-  logger.addHandler(console)
-  ##logger.addHandler(filehandler)
+  ##logger.setLevel(logging.getLevelName(options.loglevel.upper()))
+  ##
   logger.info("# duiBridged - duinode bridge for Jeedom # loglevel="+options.loglevel)
   
   configFile = os.path.join(myrootpath, "config_duibridge_nodes.xml")
@@ -522,15 +522,14 @@ def main(argv=None):
   options.to_arduino_queues[arduino_id].put(cp_cmd)
   ## subscribe to digital topics if any
   print("----\n\n")
-  print(options.pin_config.digital_pins)
-  mode_topics = options.pin_config.digital_pins.values()
-  for m_t in mode_topics:
-    (mode, topic) = m_t
-    if not ( mode in mode_status ):
-      mqttc1.subscribe(topic)
-      print('subscribe :'+topic)
+  pin_list = options.pin_config.all_pins.values()
+  for pin in pin_list:
+    ##(mode, topic) = m_t
+    if not ( pin.mode in Pin_def.mode_status ):
+      mqttc1.subscribe(pin.topic)
+      logger.debug('subscribe :'+pin.topic)
     else:
-      print('not subscribe {} {}:'.format(mode, topic))
+      logger.debug('not subscribe {} {}:'.format(pin.mode, pin.topic))
   ## subscribe to radio topics
   topics = options.pin_config.t_radio_vpins.keys()
   mqttc1.subscribe_topics(topics)
@@ -540,7 +539,7 @@ def main(argv=None):
     time.sleep(0.1)
     if not options.from_arduino_queues[arduino_id].empty(): 
       mess = str(options.from_arduino_queues[arduino_id].get(False))
-      print( "from_arduino_queues:"+mess )
+      logger.debug( "from_arduino_queues:"+mess )
       if '>>' in mess[:6]:
         (pin, value) = mess.split(">>")
         value = value.replace("<<", '')
@@ -549,18 +548,16 @@ def main(argv=None):
       options.from_arduino_queues[arduino_id].task_done()
 
     
-  print("THE END")
+  logger.debug("THE END")
 
 
-'''-------------------------------
-'''
+'''-------------------------------'''
 def write_pid(path):
 	pid = str(os.getpid())
 	logging.info("Writing PID " + pid + " to " + str(path))
 	file(str(path), 'w').write("%s\n" % pid)
 
-'''-------------------------------
-'''
+'''-------------------------------'''
 def cli_parser(argv=None):
   parser = optparse.OptionParser("usage: %prog -h   pour l'aide")
   parser.add_option("-l", "--loglevel", dest="loglevel", default="INFO", type="string", help="Log Level (INFO, DEBUG, ERROR")

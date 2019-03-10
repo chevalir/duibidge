@@ -65,6 +65,7 @@
                   "v; Sortie Digitale en pulse DOWN",
                   "x; Sortie Digitale à inversion",
                   "b; Sortie Digitale à clignotement",
+                  "p; Sortie PWM (si existe)",
                   "1; Sonde DHT1",
                   "2; Sonde DHT2",
                   "3; Sonde DHT3",
