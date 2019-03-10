@@ -29,34 +29,30 @@ cmd_cp_default = "CPzzrtyiooizzzzbzzzzzzcccccccccccccccccccccccccccccccczzzzzzzz
 
 
 def build_command(topic, value):
-  '''
-  >>> bb = aa.values()
-  >>> bb.index('oo')
-  1
-  >>> cc = aa.keys()
-  >>> bb.index('oo')
-  @TODO tester !!
-  '''
   pin=-1
-  cmd=""
-  mode_topics = options.pin_config.digital_pins.values()
+  cmd=value
+  '''mode_topics = options.pin_config.digital_pins.values()'''
+  pin = options.pin_config.all_pins[topic]
+  cmd = "SP{:0>2}{:0>4}".format(pin,value)
+  '''print(mode_topics)
   if topic in mode_topics:
     index = mode_topics.index(topic)
     pin = options.pin_config.digital_pins.keys()[index]
   else :
     mode_topics = options.pin_config.custom_vpins.values()
-	  if topic in mode_topics:
+    if topic in mode_topics:
       index = mode_topics.index(topic)
       pin = options.pin_config.custom_vpins.keys()[index]
-	if pin > -1:    
-	  cmd = "SP{:0>2}{:0>4}".format(pin,value)
-	else:
-	  mode_topics = options.pin_config.r_radio_vpins.values()
-	  if topic in mode_topics:
+  if pin > -1:    
+    cmd = "SP{:0>2}{:0>4}".format(pin,value)
+  else:
+    mode_topics = options.pin_config.r_radio_vpins.values()
+    if topic in mode_topics:
       index = mode_topics.index(topic)
       pin = options.pin_config.r_radio_vpins.keys()[index]
       cmd=value
-	  
+  '''
+  logger.debug("build_command topic: {}, value: {}, cmd: {}, pin {})".format(topic, value, cmd, pin))
   return cmd
 
 ''' -----------------------------------------
@@ -136,7 +132,7 @@ class Arduino_Node(object):
   def read_queue(self):
     task = self.request_queue.get(False)
     logger.debug( "read_queue:"+str(task) )
-    if 'CP' in value[0:2]:
+    if 'CP' in task[0:2]:
       self.write_serial(bytes(task))
     self.request_queue.task_done()
 
@@ -273,6 +269,7 @@ class Pin_Config(object):
     self.custom_vpins = {}
     self.r_radio_vpins = {}
     self.t_radio_vpins = {}
+    self.all_pins = {}
     self.transmeter_pin = -1
     self.rootNode=''
     self.DPIN=14  #default Digital Pin number
@@ -318,7 +315,8 @@ class Pin_Config(object):
         self.transmeter_pin = thepin
       full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.digital_pins[thepin] = (mode, full_topic)
-      self.cp_list[thepin]=mode        
+      self.cp_list[thepin]=mode
+      self.all_pins[topic]=thepin        
 
       # @TODO manage output pin ( subscrib to topic )
   
@@ -433,7 +431,8 @@ def send_to_topic(pin, value, lmqtt):
     elif thePin in range(options.pin_config.DPIN+options.pin_config.APIN , options.pin_config.DPIN + options.pin_config.APIN+options.pin_config.CPIN):
       (mode, topic) = options.pin_config.custom_vpins[thePin]
     else :
-      logger.info("Others pins" )
+      logger.info("arduino send value for Pin undefine in conf pin:{} value:{}".format(pin,value) )
+      return
     if mode in mode_status :
       if mode in ('r'):
         send_radio_to_jeedom(topic, value, lmqtt)
