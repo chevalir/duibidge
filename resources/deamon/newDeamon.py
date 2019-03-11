@@ -25,20 +25,33 @@ cmd_cp_default = "CPzzrtyiooizzzozzzzzzzcccccccccccccccccccccccccccccccczzzzzzzz
 ##  DBG_todo:SP130001     SP130001_OK
 ##  DBG_todo:SP130001    'SP130001'   'SP{:02}{:04}'.format(13,1)
 
+def format_chacon(t_pin, radiocode, group, action, device):
+  ## example : SP03 H 12802190 0 100
+  cmd = "SP{:0>2}H{}{}{}{:0>2}".format(t_pin, radiocode, group, action, device )
+  return cmd
+
+## @TODO  manage SP03H128021900000_OK to post status to topic 
+def decode_chacon(radio_message): ## TODO to return directly the satus to Jeedom
+  return
 
 
 def build_command(topic, value):
   try:
+    
     pin_num = options.pin_config.all_topics[topic]
-    pin_info = options.pin_config.all_pins[pin_num]
-    if pin_info.mode in Pin_def.mode_out_time:
-      cmd = "SP{:0>2}{:0>4}".format(pin_num,value)
-    if pin_info.mode in Pin_def.mode_out:
-      cmd = "SP{:0>2}{}".format(pin_num,value)
-    if pin_info.mode in Pin_def.mode_pwm:
-      cmd = "SP{:0>2}{:0>3}".format(pin_num,value)
-    if pin_info.mode in Pin_def.mode_custom_out:
-      cmd = "SP{:0>2}{:0>10}".format(pin_num,value)  
+    if pin_num == options.pin_config.transmeter_pin:
+      (device, radiocode) = options.pin_config.t_radio_vpins[topic]
+      cmd = format_chacon( options.pin_config.transmeter_pin, radiocode, 0, value, device-1) ## "SP03H128021900100"
+    else:
+      pin_info = options.pin_config.all_pins[pin_num]
+      if pin_info.mode in Pin_def.mode_out_time:
+        cmd = "SP{:0>2}{:0>4}".format(pin_num,value)
+      if pin_info.mode in Pin_def.mode_out:
+        cmd = "SP{:0>2}{}".format(pin_num,value)
+      if pin_info.mode in Pin_def.mode_pwm:
+        cmd = "SP{:0>2}{:0>3}".format(pin_num,value)
+      if pin_info.mode in Pin_def.mode_custom_out:
+        cmd = "SP{:0>2}{:0>10}".format(pin_num,value)  
     pass
   except:
     if topic in options.pin_config.all_topics.keys():
@@ -63,26 +76,24 @@ class Arduino_Node(object):
     self.send_queue=out_queue
     self.ID = arduino_id
     self.baud=115200
-    
-    
+    ## Open tread to listen arduino serial port
     thread = threading.Thread(target=self.run, args=())
-    thread.daemon = True                            # Daemonize thread
-    thread.start()                                  # Start the execution
-    print( "__init__" )
+    thread.daemon = True    # Daemonize thread
+    thread.start()          # Start the execution
 
   def run(self):
     '''Method that runs forever'''
     logger.debug( "Arduino_Node::RUN" )
     self.init_serial_com()
     while True:
-      # Do something
       time.sleep(1)
-      if not self.request_queue.empty(): 
-        self.read_queue()      
-      line = self.read_serial()
-      # parse_arduino_message if any
+
+      if not self.request_queue.empty(): ## check if a cmd need to be sent to arduino
+        self.read_queue()
+
+      line = self.read_serial() ## check if the arduino have sothing for us.
       if line != "":
-        self.send_queue.put(line)
+        self.send_queue.put(line) ## sent to the main thread
         
   def reset_with_DTR(self):
     self.SerialPort.flush()
@@ -125,8 +136,6 @@ class Arduino_Node(object):
       line = line.replace('\r', '')
       logger.debug("read_serial :"+line)
     return line
-    ##print( "@@TODO read_serial"+line )
-
 
   def read_queue(self):
     task = self.request_queue.get(False)
@@ -137,7 +146,7 @@ class Arduino_Node(object):
       self.write_serial(bytes(task))
     self.request_queue.task_done()
 
-  def write_serial(self, request):
+  def write_serial(self, request): ## @TODO MANAGE expected answer  
     while len(request) > 0:
       self.SerialPort.write(request[:64]) ## send the first bloc 64 char    
       request = request[64:] ## remove the first bloc from the request.
@@ -332,7 +341,6 @@ class Pin_Config(object):
       full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.all_pins[thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
       self.all_topics[full_topic]=thepin
-      ##self.digital_pins[thepin] = (mode, full_topic)
       self.cp_list[thepin]=mode
   
   def decode_ana(self):
@@ -346,11 +354,7 @@ class Pin_Config(object):
       full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.all_pins[self.DPIN + thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
       self.all_topics[full_topic]=self.DPIN + thepin
-
-      ##self.analog_pins[self.DPIN + thepin] = (mode, full_topic)
       self.cp_list[self.DPIN + thepin]=mode
-      # @TODO manage output pin ( subscrib to topic )
-      ##logger.debug(self.analog_pins)
 
   def decode_custom(self):
     pins = self.decode['custom']['cpins']
@@ -389,12 +393,14 @@ class Pin_Config(object):
 
       if mode in ['t', 'tr']:
         action_topic = self.get_topic_prefix('t', prefix)+topic
+        self.all_topics[action_topic]=self.transmeter_pin
         self.t_radio_vpins.update({action_topic:(device, radiocode)})
-        ## @TODO ???  options.comJeedom.subscribe_topic( action_topic )
-    ##logger.debug(self.r_radio_vpins)
-    ##logger.debug(self.t_radio_vpins)
 
   def add_radio_conf(self, radiocode, device, radiocode_key):
+    ''' This function is able to add radio configuration line in configuration file
+        when it's done it's possible to change the default topic by the true one directly 
+        in the configuration editor
+    '''
     status_topic='radio/'+radiocode+"/"+str(device)
     self.decode['radio']['cradio'].append({'typeradio': 'H; Chacon DIO', 'radiocode': radiocode, 'topic': status_topic
       , 'prefix': True, 'mode' : 'tr; Trans./Recep.', 'device': device})
@@ -429,7 +435,7 @@ def send_to_topic(pin_num, value, lmqtt):
     if thePin in options.pin_config.all_pins.keys():
       pin_info = options.pin_config.all_pins[thePin]
       if pin_info.mode in Pin_def.mode_status :
-        if pin_info.mode in ('r'):
+        if pin_info.mode in ('r'): ## Radio receptor
           send_radio_to_topic(pin_info.topic, value, lmqtt)
         else:      
           lmqtt.publish_message(pin_info.topic, value)    
@@ -444,6 +450,7 @@ def send_to_topic(pin_num, value, lmqtt):
 '''-------------------------------'''                      
 def send_radio_to_topic(topic, value, mqtt):
   global options
+  logger.debug("send_radio_to_topic : {} {}".format(topic, value))
   if "RFD" in value:
     try:
       device_on = False
