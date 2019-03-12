@@ -109,7 +109,7 @@ class duibridge extends eqLogic {
 			}
 		}
 		$return['launchable'] = 'ok';
-		$port = config::byKey('port', 'duibridge');
+		$port = config::byKey('A1_port', 'duibridge');
 		if ($port != 'auto') {
 			$port = jeedom::getUsbMapping($port);
 			if (@!file_exists($port)) {
@@ -128,7 +128,7 @@ class duibridge extends eqLogic {
 		if ($deamon_info['launchable'] != 'ok') {
 			throw new Exception(__('Veuillez vérifier la configuration', __FILE__));
 		}
-		$port = config::byKey('port', 'duibridge');
+		$port = config::byKey('A1_port', 'duibridge');
 		if ($port != 'auto') {
 			$port = jeedom::getUsbMapping($port);
 		}
@@ -154,7 +154,7 @@ class duibridge extends eqLogic {
 		}
 		$disabledNodes = trim($disabledNodes, ',');
 */
-    $cmd = '/usr/bin/python ' . $duibridge_path . '/deamon/duiBridgeD.py';
+    $cmd = '/usr/bin/python ' . $duibridge_path . '/deamon/newDeamon.py';
 		$cmd .= ' --usb_port ' . $port;
 		$cmd .= ' --loglevel ' . log::convertLogLevel(log::getLogLevel('duibridge'));
     // $cmd .= ' --loglevel INFO';

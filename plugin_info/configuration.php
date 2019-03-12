@@ -21,6 +21,7 @@ if (!isConnect()) {
     include_file('desktop', '404', 'php');
     die();
 }
+$ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
 ?>
 <div class="row">
     <label class="col-xs-2 control-label">Nombre d'arduino(s) utilisés</label>
@@ -36,33 +37,64 @@ if (!isConnect()) {
             <option value="8" id="ArduinoQty">8</option>
         </select>
     </div>
-    Actualiser la page après la Sauvegarde d'un changement.
+    Actualiser la page après la page apres tout changement et sauvegarde.
 </div>
 
-<form class="form-horizontal">
-    <fieldset>
-        <legend><i class="fa fa-list-alt"></i> {{Général}}</legend>
-        <div class="form-group">
-          <label class="col-sm-4 control-label">{{Mode bridge (utilisation avec Arduidom)}}</label>
-          <div class="col-sm-2">
-            <input type="checkbox" class="configKey" data-l1key="bridgemode"/>
-          </div>
-        </div>
 
-        <div class="form-group">
-            <label class="col-lg-4 control-label">{{Port USB}}</label>
-            <div class="col-lg-2">
-                <select class="configKey form-control" data-l1key="port">
-                	<option value="none">{{Aucun}}</option>
-                	<option value="auto">{{Auto}}</option>
-                	<?php
-                				foreach (jeedom::getUsbMapping('', true) as $name => $value) {
-                				echo '<option value="' . $name . '">' . $name . ' (' . $value . ')</option>';
-                				}
-                	?>
-                </select>
-            </div>
+<ul class="nav nav-pills nav-justified" id="tab_arid">
+    <?php for ($i=1; $i <= $ArduinoQty; $i++) {
+        if ($i == 1) {
+            echo '<li class="active">';
+        } else {
+            echo '<li>';
+        }
+        $daemonstate = 1;
+        echo '<a data-toggle="tab" href="#tab_' . $i . '">{{Arduino ' . $i . ' <span class="label label-' . (($daemonstate == 1) ? 'success' : 'danger') . ' "> PING:' . (($daemonstate == 1) ? 'OK' : 'NOK') . '</span>' . '}}</a></li>';
+    } ?>
+</ul>
+
+<div class="tab-content" id="arduinotabs">
+    <?php for ($i=1; $i <= $ArduinoQty; $i++) { ?>
+        <div class="tab-pane<?php if ($i == 1) echo " active" ?>" id="tab_<?php echo $i ?>">
+            <hr>
+            <form class="form-horizontal">
+                <fieldset>
+                    <div class="form-group">
+                        <label class="col-lg-3 control-label">Port de l'Arduino N° <?php echo $i ?></label>
+                        <div class="col-lg-9">
+                            <select class="configKey form-control" data-l1key="A<?php echo $i ?>_port">
+                                <option value="none">{{Aucun}}</option>
+                                <option value="auto">{{Auto}}</option>
+                                <?php
+                                            foreach (jeedom::getUsbMapping('', true) as $name => $value) {
+                                            echo '<option value="' . $name . '">' . $name . ' (' . $value . ')</option>';
+                                            }
+                                ?>
+                                <option value="/dev/ttyUSB0">{{Arduino sur USB /dev/ttyUSB0}}</option>
+                                <option value="/dev/ttyUSB1">{{Arduino sur USB /dev/ttyUSB1}}</option>
+                                <option value="/dev/ttyUSB2">{{Arduino sur USB /dev/ttyUSB2}}</option>
+                                <option value="/dev/ttyACM0">{{Arduino sur USB /dev/ttyACM0}}</option>
+                                <option value="/dev/ttyACM1">{{Arduino sur USB /dev/ttyACM1}}</option>
+                                <option value="/dev/ttyACM2">{{Arduino sur USB /dev/ttyACM2}}</option>
+                                <option value="/dev/ttyS0">{{Arduino sur USB /dev/ttyS0}}</option>
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+            <form>
+                <fieldset>
+                    <legend><i class="fa fa-list-alt"></i> {{Général}}</legend>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">{{Mode bridge (utilisation avec le plugins Arduidom)}}</label>
+                        <div class="col-sm-2">
+                            <input type="checkbox" class="configKey" data-l1key="bridgemode"/>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
         </div>
-  </fieldset>
-</form>
+    <?php } ?>  <!-- FIN DU For PHP -->
+</div>
 
