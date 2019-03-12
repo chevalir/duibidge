@@ -28,7 +28,7 @@ cmd_cp_default = "CPzzrtyiooizzzozzzzzzzcccccccccccccccccccccccccccccccczzzzzzzz
 def format_chacon(t_pin, radiocode, group, action, device):
   ## example : SP03 H 12802190 0 100
   cmd = "SP{:0>2}H{}{}{}{:0>2}".format(t_pin, radiocode, group, action, device )
-  return cmd
+  return cmd 
 
 ## @TODO  manage SP03H128021900000_OK to post status to topic 
 def decode_chacon(radio_message): ## TODO to return directly the satus to Jeedom
@@ -65,7 +65,7 @@ def build_command(topic, value):
     pass
 
   logger.debug("build_command topic: {} value: {} cmd: {}".format(topic, value, cmd))
-  return cmd
+  return cmd ## replace by { command:cmd, answer:cmd+"_OK"}
 
 ''' -----------------------------------------
 '''
@@ -92,7 +92,7 @@ class Arduino_Node(object):
         self.read_queue()
 
       line = self.read_serial() ## check if the arduino have sothing for us.
-      if line != "":
+      if line != "" and not ( "DBG" in line ):
         self.send_queue.put(line) ## sent to the main thread
         
   def reset_with_DTR(self):
