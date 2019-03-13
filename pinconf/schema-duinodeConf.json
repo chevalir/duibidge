@@ -1,5 +1,21 @@
 {
   "properties": {
+    "identifier": {
+      "type": "string",
+      "title": "Identifer",
+      "enum": [
+        "Select the ID",
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8"
+      ],
+      "default": "Select the ID"
+    },
     "name": {
       "type": "string",
       "title": "Node name",

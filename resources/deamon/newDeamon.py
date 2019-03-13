@@ -289,9 +289,6 @@ class Pin_Config(object):
     else:
       self.conf_save_path=conf_save_path
 
-    ##self.digital_pins = {}
-    ##self.analog_pins = {}
-    ##self.custom_vpins = {}
     self.r_radio_vpins = {}
     self.t_radio_vpins = {}
     self.all_pins = {}
@@ -304,29 +301,40 @@ class Pin_Config(object):
     self.decode={}
     self.cp_list = []  # use to send CP command to arduino CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc
 
-  def load_config(self):
+  def load_config(self, ID, alldecode=None):
     try:
-      logger.debug(self.conf_file_path + " to load ")
-      # Get a file object with write permission.
-      file_object = open(self.conf_file_path, 'r')
-      logger.debug(self.conf_file_path + " loaded ") 
-      # Load JSON file data to a python dict object.
-      self.decode = json.load(file_object)
+      if not alldecode == None:
+        self.alldecode = alldecode
+      else :   
+        logger.debug(self.conf_file_path + " to load ")
+        # Get a file object with write permission.
+        file_object = open(self.conf_file_path, 'r')
+        logger.debug(self.conf_file_path + " loaded ") 
+        # Load JSON file data to a python dict object.
+        self.alldecode = json.load(file_object)
+        file_object.close()
     except Exception as e:
       print(e)
       return
-    self.rootNode = str(self.decode['name'])
-    cardType = self.decode['card']
-    if cardType.find('UNO'):
-      self.DPIN=14
-      self.APIN=6
-      self.CPIN=32    
-    for dp in range(self.DPIN + self.APIN + self.CPIN):
-      self.cp_list.append('z') 
-    self.decode_digital()
-    self.decode_ana()
-    self.decode_custom()
-    self.decode_radio()
+    if type(self.alldecode) == list:
+      for i in range(len(self.alldecode)):
+        if self.alldecode[i]['identifier'] == ID: ## seach A1, or A2, ...
+          self.decode = self.alldecode[i]
+    if not self.decode == None:
+      self.ID = str(self.decode['identifier'])
+      print(self.ID)
+      self.rootNode = str(self.decode['name'])
+      cardType = self.decode['card']
+      if cardType.find('UNO'):
+        self.DPIN=14
+        self.APIN=6
+        self.CPIN=32    
+      for dp in range(self.DPIN + self.APIN + self.CPIN):
+        self.cp_list.append('z') 
+      self.decode_digital()
+      self.decode_ana()
+      self.decode_custom()
+      self.decode_radio()
 
   def decode_digital(self):
     pins = self.decode['digitals']['dpins']
@@ -514,7 +522,7 @@ def main(argv=None):
   options.Ardno_conf.load_node_config()
 
   options.pin_config = Pin_Config(options.config_folder)
-  options.pin_config.load_config()
+  options.pin_config.load_config("A1")
   
   options.nodes={}
   arduino_id = options.pin_config.rootNode ## TODO manage several arduino

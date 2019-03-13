@@ -36,6 +36,7 @@ if (!isConnect('admin')) {
       // and to provide a "Restore to Default" button.
      var starting_value = [
         {
+        "identifier":"A1",
         "name": "Arduino1",
         "card": "UNO, duemilanove328, leo, nano168, nano328, mega2560",
         "port": "USB1",
@@ -79,7 +80,7 @@ if (!isConnect('admin')) {
           format: "tabs",
           items: {
             title: "Configuration",
-            headerTemplate: "{{i}} - {{self.name}}",
+            headerTemplate: 'Arduino {{self.name}}',
             $ref: "plugins/duibridge/pinconf/schema-duinodeConf.json"
           }
         },
@@ -147,7 +148,7 @@ if (!isConnect('admin')) {
 
         var response=document.getElementById("editor_holder");
         var value = editor.getValue();
-        var data = 'data='+ JSON.stringify(value[0], null, 2);
+        var data = 'data='+ JSON.stringify(value, null, 2);
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange=function(){
           if (xmlhttp.readyState==4 && xmlhttp.status==200){
