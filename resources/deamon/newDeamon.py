@@ -37,11 +37,12 @@ def decode_chacon(radio_message): ## TODO to return directly the satus to Jeedom
 
 def build_command(topic, value):
   try:
-    
     pin_num = options.pin_config.all_topics[topic]
     if pin_num == options.pin_config.transmeter_pin:
       (device, radiocode) = options.pin_config.t_radio_vpins[topic]
       cmd = format_chacon( options.pin_config.transmeter_pin, radiocode, 0, value, device-1) ## "SP03H128021900100"
+      ## @TODO send "?>>RFD:"+radiocode+":A:"+value*100+device-1":P:4<<"
+      request = Arduino_Request(cmd, cmd+"_OK", "?>>RFD:{}:A:{}:P:4<<".format(radiocode, int(value)*100+device-1))
     else:
       pin_info = options.pin_config.all_pins[pin_num]
       if pin_info.mode in Pin_def.mode_out_time:
@@ -51,21 +52,22 @@ def build_command(topic, value):
       if pin_info.mode in Pin_def.mode_pwm:
         cmd = "SP{:0>2}{:0>3}".format(pin_num,value)
       if pin_info.mode in Pin_def.mode_custom_out:
-        cmd = "SP{:0>2}{:0>10}".format(pin_num,value)  
+        cmd = "SP{:0>2}{:0>10}".format(pin_num,value)
+      request = Arduino_Request(cmd, cmd+"_OK")
     pass
   except:
     if topic in options.pin_config.all_topics.keys():
       logger.debug("topic  found "+topic)
     else:
       logger.debug("topic not found "+topic)
-    cmd=value
+    request = Arduino_Request(str(value), str(value)+"_OK")    
     pass
   finally:
-    logger.debug("build_command cmd="+cmd)
+    logger.debug("build_command cmd="+request.request)
     pass
 
-  logger.debug("build_command topic: {} value: {} cmd: {}".format(topic, value, cmd))
-  return cmd ## replace by { command:cmd, answer:cmd+"_OK"}
+  logger.debug("build_command topic: {} value: {} cmd: {}".format(topic, value, request.request))
+  return request ## replace by { command:cmd, answer:cmd+"_OK"}
 
 ''' -----------------------------------------
 '''
@@ -76,6 +78,7 @@ class Arduino_Node(object):
     self.send_queue=out_queue
     self.ID = arduino_id
     self.baud=115200
+    self.last_request=None
     ## Open tread to listen arduino serial port
     thread = threading.Thread(target=self.run, args=())
     thread.daemon = True    # Daemonize thread
@@ -87,13 +90,13 @@ class Arduino_Node(object):
     self.init_serial_com()
     while True:
       time.sleep(1)
-
-      if not self.request_queue.empty(): ## check if a cmd need to be sent to arduino
-        self.read_queue()
-
+      if self.last_request==None or self.last_request.done():
+        if not self.request_queue.empty(): ## check if a cmd need to be sent to arduino
+          self.read_queue()
       line = self.read_serial() ## check if the arduino have sothing for us.
       if line != "" and not ( "DBG" in line ):
         self.send_queue.put(line) ## sent to the main thread
+      ## @TODO Manage expected answer
         
   def reset_with_DTR(self):
     self.SerialPort.flush()
@@ -138,23 +141,58 @@ class Arduino_Node(object):
     return line
 
   def read_queue(self):
-    task = self.request_queue.get(False)
-    logger.debug( "read_queue:"+str(task) )
-    if 'CP' in task[0:2]:
-      self.write_serial(bytes(task))
-    if 'SP' in task[0:2]:
-      self.write_serial(bytes(task))
+    arduino_request = self.request_queue.get(False)
+    logger.debug( "read_queue:"+str(arduino_request.request) )
+    arduino_request.start()
+    if arduino_request.request[0:2] in ['CP', 'SP']:
+      self.write_serial(bytes(arduino_request.request))
+    else :
+      arduino_request.received("")
     self.request_queue.task_done()
 
-  def write_serial(self, request): ## @TODO MANAGE expected answer  
-    while len(request) > 0:
-      self.SerialPort.write(request[:64]) ## send the first bloc 64 char    
-      request = request[64:] ## remove the first bloc from the request.
-      if len(request) > 0:
+  def write_serial(self, cmd): ## @TODO MANAGE expected answer  
+    while len(cmd) > 0:
+      self.SerialPort.write(cmd[:64]) ## send the first bloc 64 char    
+      cmd = cmd[64:] ## remove the first bloc from the request.
+      if len(cmd) > 0:
         time.sleep(0.1) ## delay before next bloc (if any)
       else :
         self.SerialPort.write('\n') ## all blocs sent, now send terminator
     logger.debug( "write_serial end")
+
+
+
+class Arduino_Request:
+  def __init__(self, request, expected_answer, return_value=None):
+    self.request = request
+    self.answer = ""
+    self.status = "INIT"  # INIT|STARTED|OK|KO
+    self.timeout = 10
+    self.expected = expected_answer
+    self.return_mess = return_value
+
+  def start(self):
+    self.start_time = int(time.time())
+    self.status = "STARTED"
+    return self.request
+
+  def check_status(self):
+    # logger.debug("IN CLASS " + str(self.start_time) + " " + str(self.timeout) + " " + str(time.time()))
+    if (self.status == "STARTED") and (int(time.time()) - self.start_time) >= self.timeout:
+      self.received("TIMEOUT")
+    return self.status
+
+  def done(self):
+    return self.check_status() == "OK" or self.check_status() == "KO"
+
+  def received(self, answer):
+    if answer == self.expected:
+      self.status = "OK"
+    else:
+      self.status = "KO"
+    self.answer = answer
+
+
 
 
 ''' -----------------------------------------
@@ -534,7 +572,8 @@ def main(argv=None):
   mqttc1 = MQTT_Client()
   rc = mqttc1.run("localhost", arduino_id, options.to_arduino_queues[arduino_id])
   cp_cmd =options.pin_config.get_pin_conf_cmd()
-  options.to_arduino_queues[arduino_id].put(cp_cmd)
+  request = Arduino_Request(cp_cmd, "CP_OK")
+  options.to_arduino_queues[arduino_id].put(request)
   ## subscribe to digital topics if any
   print("----\n\n")
   pin_list = options.pin_config.all_pins.values()
