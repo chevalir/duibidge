@@ -42,7 +42,8 @@ def build_command(topic, value):
       (device, radiocode) = options.pin_config.t_radio_vpins[topic]
       cmd = format_chacon( options.pin_config.transmeter_pin, radiocode, 0, value, device-1) ## "SP03H128021900100"
       ## @TODO send "?>>RFD:"+radiocode+":A:"+value*100+device-1":P:4<<"
-      request = Arduino_Request(cmd, cmd+"_OK", "?>>RFD:{}:A:{}:P:4<<".format(radiocode, int(value)*100+device-1))
+      request = Arduino_Request(cmd, cmd+"_OK", {radiocode:radiocode, action:value, device:(device-1)} )
+      ##"?>>RFD:{}:A:{}:P:4<<".format(radiocode, int(value)*100+device-1))
     else:
       pin_info = options.pin_config.all_pins[pin_num]
       if pin_info.mode in Pin_def.mode_out_time:
@@ -78,7 +79,7 @@ class Arduino_Node(object):
     self.send_queue=out_queue
     self.ID = arduino_id
     self.baud=115200
-    self.last_request=None
+    self.current_request=None
     ## Open tread to listen arduino serial port
     thread = threading.Thread(target=self.run, args=())
     thread.daemon = True    # Daemonize thread
@@ -88,14 +89,17 @@ class Arduino_Node(object):
     '''Method that runs forever'''
     logger.debug( "Arduino_Node::RUN" )
     self.init_serial_com()
+    self.current_request=Arduino_Request("","") ## empty request to initialize 
+    self.current_request.received("") ## call to directly close the request
     while True:
-      time.sleep(1)
-      if self.last_request==None or self.last_request.done():
+      time.sleep(0.1)
+      if self.current_request.done(): ## waitting the end of the current request
         if not self.request_queue.empty(): ## check if a cmd need to be sent to arduino
           self.read_queue()
       line = self.read_serial() ## check if the arduino have sothing for us.
       if line != "" and not ( "DBG" in line ):
-        self.send_queue.put(line) ## sent to the main thread
+        if not self.current_request.done() and not self.current_request.is_expected(line):
+          self.send_queue.put(line) ## No task in progress or not expected answer ... 
       ## @TODO Manage expected answer
         
   def reset_with_DTR(self):
@@ -160,8 +164,8 @@ class Arduino_Node(object):
         self.SerialPort.write('\n') ## all blocs sent, now send terminator
     logger.debug( "write_serial end")
 
-
-
+''' -----------------------------------------
+'''
 class Arduino_Request:
   def __init__(self, request, expected_answer, return_value=None):
     self.request = request
@@ -177,7 +181,7 @@ class Arduino_Request:
     return self.request
 
   def check_status(self):
-    # logger.debug("IN CLASS " + str(self.start_time) + " " + str(self.timeout) + " " + str(time.time()))
+    logger.debug("Arduino_Request start:{} timeout:{} time{}".format(self.start_time, self.timeout, time.time()))
     if (self.status == "STARTED") and (int(time.time()) - self.start_time) >= self.timeout:
       self.received("TIMEOUT")
     return self.status
@@ -185,6 +189,14 @@ class Arduino_Request:
   def done(self):
     return self.check_status() == "OK" or self.check_status() == "KO"
 
+  def is_expected(self, answer):
+    if answer == self.expected:
+      self.answer = answer
+      self.status = "OK"
+      return True
+    else:
+      return False
+  
   def received(self, answer):
     if answer == self.expected:
       self.status = "OK"
@@ -241,7 +253,6 @@ class MQTT_Client(paho.Client):
 '''
 class Arduino_Config(object):
 
-  ''' ...............................................'''
   def __init__(self, conf_file_path):
     self.conf_file_path=conf_file_path
     self.ArduinoStekchVersion = "0.0.0"
@@ -249,7 +260,6 @@ class Arduino_Config(object):
     self.Arduino_ports = {}
     self.pid_file =""
 
-  ''' ...............................................'''
   def load_node_config(self):
     if os.path.exists( self.conf_file_path ):
       #open the xml file for reading:
@@ -260,7 +270,7 @@ class Arduino_Config(object):
       try:
         xmlDom = minidom.parseString(data)
       except:
-        print "Error: problem in the config_arduidom.xml file, cannot process it"
+        print ("Error: problem in the config_arduidom.xml file, cannot process it")
         logger.debug('Error to read file : '+self.conf_file_path)
   
       # ----------------------
@@ -282,10 +292,8 @@ class Arduino_Config(object):
     
     else:
       # config file not found, set default values
-      print "Error: Configuration file not found (" + self.conf_file_path  + ")"
       logger.error("Error: Configuration file not found (" + self.conf_file_path  + ") Line: ")
   
-  ''' ...............................................'''
   def read_config_item(self, xmlDom, configItem):
     # Get config item
     xmlData = ""
@@ -313,6 +321,7 @@ class Pin_def:
 
   def __init__(self, **kwds):
     self.__dict__.update(kwds)
+
   def __repr__(self):
     return str(self.__dict__)
 
@@ -482,7 +491,7 @@ def send_to_topic(pin_num, value, lmqtt):
       pin_info = options.pin_config.all_pins[thePin]
       if pin_info.mode in Pin_def.mode_status :
         if pin_info.mode in ('r'): ## Radio receptor
-          send_radio_to_topic(pin_info.topic, value, lmqtt)
+          send_radio_to_topic(lmqtt, value)
         else:      
           lmqtt.publish_message(pin_info.topic, value)    
       else:
@@ -494,25 +503,25 @@ def send_to_topic(pin_num, value, lmqtt):
   
 
 '''-------------------------------'''                      
-def send_radio_to_topic(topic, value, mqtt):
+def send_radio_to_topic(mqtt, value, radiocode=None, device=None, device_on=None):
   global options
-  logger.debug("send_radio_to_topic : {} {}".format(topic, value))
+  logger.debug("send_radio_to_topic : {} {}".format(value, radiocode))
   if "RFD" in value:
     try:
-      device_on = False
-      device_split = value.split(':')
-      radiocode = device_split[1]
-      device = int (device_split[3]) + 1
-      device_on = device > 99
-      if device_on :
-        device = device - 100
+      if radiocode==None or device==None or device_on==None:
+        device_split = value.split(':')
+        radiocode = device_split[1]
+        device = int (device_split[3]) + 1
+        device_on = device > 99
+        if device_on :
+          device = device - 100
       value = On_Off[int(device_on)]
-      radiocode_key = '{}#{:0>2}'.format(radiocode, device)
-      if radiocode_key not in options.pin_config.r_radio_vpins:
-        radiocode_key = '{}#{:0>2}'.format(radiocode, 0)
+      radiocode_key = '{}#{:0>2}'.format(radiocode, device) ## search if a topic is define for this device
+      if radiocode_key not in options.pin_config.r_radio_vpins: 
+        radiocode_key = '{}#{:0>2}'.format(radiocode, 0) ## search if a topic is define for all devices of this radiocode
         if radiocode_key not in options.pin_config.r_radio_vpins:
           logger.info("radio code={0} device ={1} not define in config ".format(radiocode, device) )
-          options.pin_config.add_radio_conf(radiocode, device, radiocode_key)
+          options.pin_config.add_radio_conf(radiocode, device, radiocode_key) ## no config for this radiocode so added with default values
           value = "{0}={1}".format(device, value)      
       (device, topic) = options.pin_config.r_radio_vpins.get(radiocode_key)
       logger.info("radio code={0} device ={1} topic {2} ".format(radiocode_key, device, topic) )
