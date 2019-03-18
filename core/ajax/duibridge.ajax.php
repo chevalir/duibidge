@@ -24,6 +24,13 @@ try {
         throw new Exception(__('401 - Accès non autorisé', __FILE__));
     }
 
+    if (init('action') == 'SaveConfToJson') {
+        if (arduidom::SaveConfToJson() == 1) {
+            ajax::success();
+        } else {
+            ajax::error("Une erreur est survenue pendant la sauvegarde en JSON de la conf des ports !");
+        }
+    }
 
 
     throw new Exception(__('Aucune méthode correspondante à : ', __FILE__) . init('action'));

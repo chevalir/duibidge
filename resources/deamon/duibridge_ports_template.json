@@ -1,0 +1,14 @@
+
+{    
+    "version":"#version#",
+    "ArduinoVersion":"#ArduinoVersion#",
+    "ArduinoQty":"#ArduinoQty#",
+    "A1_serial_port":"#A1_serial_port#",
+    "A2_serial_port":"#A2_serial_port#",
+    "A3_serial_port":"#A3_serial_port#",
+    "A4_serial_port":"#A4_serial_port#",
+    "A5_serial_port":"#A5_serial_port#",
+    "A6_serial_port":"#A6_serial_port#",
+    "A7_serial_port":"#A7_serial_port#",
+    "A8_serial_port":"#A8_serial_port#"
+}

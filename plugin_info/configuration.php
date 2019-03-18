@@ -49,18 +49,18 @@ $ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
             echo '<li>';
         }
         $daemonstate = 1;
-        echo '<a data-toggle="tab" href="#tab_' . $i . '">{{Arduino ' . $i . ' <span class="label label-' . (($daemonstate == 1) ? 'success' : 'danger') . ' "> PING:' . (($daemonstate == 1) ? 'OK' : 'NOK') . '</span>' . '}}</a></li>';
+        echo '<a data-toggle="tab" href="#tab_' . $i . '">{{Arduino A' . $i . ' <span class="label label-' . (($daemonstate == 1) ? 'success' : 'danger') . ' "> PING:' . (($daemonstate == 1) ? 'OK' : 'NOK') . '</span>' . '}}</a></li>';
     } ?>
 </ul>
 
 <div class="tab-content" id="arduinotabs">
-    <?php for ($i=1; $i <= $ArduinoQty; $i++) { ?>
+    <?php for ($i=1; $i <= 8; $i++) { ?>
         <div class="tab-pane<?php if ($i == 1) echo " active" ?>" id="tab_<?php echo $i ?>">
             <hr>
             <form class="form-horizontal">
                 <fieldset>
                     <div class="form-group">
-                        <label class="col-lg-3 control-label">Port de l'Arduino N° <?php echo $i ?></label>
+                        <label class="col-lg-3 control-label">Port de l'Arduino A<?php echo $i ?></label>
                         <div class="col-lg-9">
                             <select class="configKey form-control" data-l1key="A<?php echo $i ?>_port">
                                 <option value="none">{{Aucun}}</option>
@@ -95,6 +95,25 @@ $ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
                 </fieldset>
             </form>
         </div>
+
     <?php } ?>  <!-- FIN DU For PHP -->
 </div>
+<script>
+    var jsinitok = false;
 
+        $('#Arduinoqty').change(function() {
+            if (jsinitok) {
+                console.log("Qty Changed ! Saving...");
+                document.getElementById("bt_savePluginConfig").click();
+                location.reload();
+                $('#ul_plugin .li_plugin[data-plugin_id=duibridge]').click();
+            }
+        });
+
+    //$(document).ready(function(){
+        setTimeout(function() {
+        jsinitok = true;
+        console.log("initOK");
+    }, 3000);
+
+</script>

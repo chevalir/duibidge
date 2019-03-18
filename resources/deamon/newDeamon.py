@@ -42,7 +42,7 @@ def build_command(topic, value):
       (device, radiocode) = options.pin_config.t_radio_vpins[topic]
       cmd = format_chacon( options.pin_config.transmeter_pin, radiocode, 0, value, device-1) ## "SP03H128021900100"
       ## @TODO send "?>>RFD:"+radiocode+":A:"+value*100+device-1":P:4<<"
-      request = Arduino_Request(cmd, cmd+"_OK", {radiocode:radiocode, action:value, device:(device-1)} )
+      request = Arduino_Request(cmd, cmd+"_OK", {"radiocode":radiocode, "action":value, "device":(device-1)} )
       ##"?>>RFD:{}:A:{}:P:4<<".format(radiocode, int(value)*100+device-1))
     else:
       pin_info = options.pin_config.all_pins[pin_num]
@@ -174,6 +174,7 @@ class Arduino_Request:
     self.timeout = 10
     self.expected = expected_answer
     self.return_mess = return_value
+    self.start_time = 0
 
   def start(self):
     self.start_time = int(time.time())
@@ -187,7 +188,7 @@ class Arduino_Request:
     return self.status
 
   def done(self):
-    return self.check_status() == "OK" or self.check_status() == "KO"
+    return self.status == "OK" or self.check_status() == "KO"
 
   def is_expected(self, answer):
     if answer == self.expected:

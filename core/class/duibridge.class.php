@@ -96,6 +96,10 @@ class duibridge extends eqLogic {
 
       }
      */
+    public static function SaveConfToJson()
+    {
+
+		}
 
 	public static function deamon_info() {
 		$return = array();
