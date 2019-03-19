@@ -96,9 +96,35 @@ class duibridge extends eqLogic {
 
       }
      */
-    public static function SaveConfToJson()
-    {
+    public static function SaveConfToJson() {
+			log::add('duibridge', 'info', 'Config port sauvegarde');
 
+			$nbArduinos = intval(config::byKey("ArduinoQty", "duibridge", 1, true));
+			$daemon_path = dirname(__FILE__) . '/../../resources/deamon';
+			if (file_exists($daemon_path . '/duibridge_ports.json')) unlink($daemon_path . '/duibridge_ports.json');
+			$replace_config = array(
+					/*'#ArduinoVersion#' => "1.0.0",*/
+					'#ArduinoQty#' => config::byKey("arduinoqty","duibridge",0),
+			);
+
+			for ($i = 1; $i <= $nbArduinos; $i++) {
+					$replace_config['#A' . $i . '_serial_port#'] = config::byKey('A' . $i . '_port', 'duibridge', '');
+			}/*
+			if ($nbArduinos < 8) {
+				for ($i = $nbArduinos; $i <= 8; $i++) {	
+					$replace_config['#A' . $i . '_serial_port#'] = "NULL";
+				 }	
+			}*/
+			$config = file_get_contents($daemon_path . '/duibridge_ports_template.json');
+			log::add('duibridge', 'info', 'Config port before'.$config);
+
+			$config = template_replace($replace_config, $config);
+			log::add('duibridge', 'info', 'Config port after'.$config);
+
+			file_put_contents($daemon_path . '/duibridge_ports.json', $config);
+			chmod($daemon_path . '/duibridge_ports.json', 0777);
+			log::add('duibridge', 'info', 'Config port done');
+			return 1;
 		}
 
 	public static function deamon_info() {
@@ -126,7 +152,7 @@ class duibridge extends eqLogic {
 		return $return;
 	}
 
-	public static function deamon_start($_debug = false) {
+	public static function deamon_startoff($_debug = false) {
 		self::deamon_stop();
 		$deamon_info = self::deamon_info();
 		if ($deamon_info['launchable'] != 'ok') {
@@ -136,7 +162,7 @@ class duibridge extends eqLogic {
 		if ($port != 'auto') {
 			$port = jeedom::getUsbMapping($port);
 		}
-    $ressource_path = realpath(dirname(__FILE__) . '/../../ressources');
+    /*$ressource_path = realpath(dirname(__FILE__) . '/../../ressources');*/
 
 		$duibridge_path = dirname(__FILE__) . '/../../resources';
 		$config_path = dirname(__FILE__) . '/../../pinconf/pinConf.json';
@@ -158,7 +184,7 @@ class duibridge extends eqLogic {
 		}
 		$disabledNodes = trim($disabledNodes, ',');
 */
-    $cmd = '/usr/bin/python ' . $duibridge_path . '/deamon/newDeamon.py';
+    $cmd = '/usr/bin/python ' . $duibridge_path . '/deamon/nduideamon.py';
 		$cmd .= ' --usb_port ' . $port;
 		$cmd .= ' --loglevel ' . log::convertLogLevel(log::getLogLevel('duibridge'));
     // $cmd .= ' --loglevel INFO';
@@ -191,7 +217,7 @@ class duibridge extends eqLogic {
 			$pid = intval(trim(file_get_contents($pid_file)));
 			system::kill($pid);
 		}
-		system::kill('duibridged.py');
+		system::kill('nduideamon.py');
 		$port = config::byKey('port', 'duibridge');
 		if ($port != 'auto') {
 			system::fuserk(jeedom::getUsbMapping($port));

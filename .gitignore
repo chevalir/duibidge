@@ -14,3 +14,4 @@ resources/deamon/.com.greenworldsoft.syncfolderspro
 pinconf/--pinConf.json
 sync.sh
 togit.sh
+resources/deamon/--duibridge_ports.json

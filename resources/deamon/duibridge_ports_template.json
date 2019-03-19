@@ -1,7 +1,6 @@
 
 {    
-    "version":"#version#",
-    "ArduinoVersion":"#ArduinoVersion#",
+    "version":"1.0.0",
     "ArduinoQty":"#ArduinoQty#",
     "A1_serial_port":"#A1_serial_port#",
     "A2_serial_port":"#A2_serial_port#",

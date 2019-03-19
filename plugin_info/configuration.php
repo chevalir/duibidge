@@ -49,7 +49,7 @@ $ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
             echo '<li>';
         }
         $daemonstate = 1;
-        echo '<a data-toggle="tab" href="#tab_' . $i . '">{{Arduino A' . $i . ' <span class="label label-' . (($daemonstate == 1) ? 'success' : 'danger') . ' "> PING:' . (($daemonstate == 1) ? 'OK' : 'NOK') . '</span>' . '}}</a></li>';
+        echo '<a data-toggle="tab" href="#tab_' . $i . '">{{Arduino A' . $i . '}}</a></li>';
     } ?>
 </ul>
 
@@ -63,7 +63,7 @@ $ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
                         <label class="col-lg-3 control-label">Port de l'Arduino A<?php echo $i ?></label>
                         <div class="col-lg-9">
                             <select class="configKey form-control" data-l1key="A<?php echo $i ?>_port">
-                                <option value="none">{{Aucun}}</option>
+                                <option value="none">{{NULL}}</option>
                                 <option value="auto">{{Auto}}</option>
                                 <?php
                                             foreach (jeedom::getUsbMapping('', true) as $name => $value) {
@@ -100,6 +100,32 @@ $ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
 </div>
 <script>
     var jsinitok = false;
+    $('#bt_savePluginConfig').on('click', function () {
+        console.log("bt_savePluginConfig");
+
+        $.ajax({// fonction permettant de faire de l'ajax
+            type: "POST", // methode de transmission des données au fichier php
+            url: "plugins/duibridge/core/ajax/duibridge.ajax.php", // url du fichier php
+            data: {
+                action: "SaveConfToJson"
+            },
+            dataType: 'json',
+            error: function (request, status, error) {
+                handleAjaxError(request, status, error);
+            },
+            success: function (data) { // si l'appel a bien fonctionné
+                if (data.state != 'ok') {
+                    $('#div_alert').showAlert({message: data.result, level: 'danger'});
+                    return;
+                }
+                $('#div_alert').showAlert({message: 'La Migration a été correctement effectuée.', level: 'success'});
+            }
+        });
+
+        //history.go(0);
+    });
+
+
 
         $('#Arduinoqty').change(function() {
             if (jsinitok) {

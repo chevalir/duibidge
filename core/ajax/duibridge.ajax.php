@@ -23,9 +23,10 @@ try {
     if (!isConnect('admin')) {
         throw new Exception(__('401 - Accès non autorisé', __FILE__));
     }
+    log::add('duibridge', 'info', 'action');
 
     if (init('action') == 'SaveConfToJson') {
-        if (arduidom::SaveConfToJson() == 1) {
+        if (duibridge::SaveConfToJson() == 1) {
             ajax::success();
         } else {
             ajax::error("Une erreur est survenue pendant la sauvegarde en JSON de la conf des ports !");
