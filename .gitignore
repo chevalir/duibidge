@@ -9,3 +9,6 @@ togit.sh
 togit.sh
 sync.sh
 resources/deamon/.com.greenworldsoft.syncfolderspro
+.vscode/settings.json
+*.pid
+pinconf/--pinConf.json
