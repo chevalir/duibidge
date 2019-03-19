@@ -12,3 +12,5 @@ resources/deamon/.com.greenworldsoft.syncfolderspro
 .vscode/settings.json
 *.pid
 pinconf/--pinConf.json
+sync.sh
+togit.sh
