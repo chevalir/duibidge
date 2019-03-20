@@ -153,43 +153,31 @@ class duibridge extends eqLogic {
 		return $return;
 	}
 
-	public static function deamon_startoff($_debug = false) {
+	public static function deamon_start($_debug = false) {
 		self::deamon_stop();
 		$deamon_info = self::deamon_info();
 		if ($deamon_info['launchable'] != 'ok') {
 			throw new Exception(__('Veuillez vérifier la configuration', __FILE__));
-		}
+		}/*
 		$port = config::byKey('A1_port', 'duibridge');
 		if ($port != 'auto') {
 			$port = jeedom::getUsbMapping($port);
-		}
+		}*/
     /*$ressource_path = realpath(dirname(__FILE__) . '/../../ressources');*/
 
 		$duibridge_path = dirname(__FILE__) . '/../../resources';
-		$config_path = dirname(__FILE__) . '/../../pinconf/pinConf.json';
-		$data_path = dirname(__FILE__) . '/../../resources/data';
-		if (!file_exists($data_path)) {
-			exec('mkdir ' . $data_path . ' && chmod 775 -R ' . $data_path . ' && chown -R www-data:www-data ' . $data_path);
-		}
-
+		$config_pins_path = dirname(__FILE__) . '/../../pinconf/pinConf.json';
+		$config_ports_path = $duibridge_path . '/deamon/duibridge_ports.json';
 		$suppressRefresh = 0;
 		if (config::byKey('suppress_refresh', 'duibridge') == 1) {
 			$suppressRefresh = 1;
 		}
-/*
-		$disabledNodes = '';
-		foreach (self::byType('duibridge') as $eqLogic) {
-			if (!$eqLogic->getIsEnable()) {
-				$disabledNodes .= $eqLogic->getLogicalId() . ',';
-			}
-		}
-		$disabledNodes = trim($disabledNodes, ',');
-*/
     $cmd = '/usr/bin/python ' . $duibridge_path . '/deamon/nduideamon.py';
-		$cmd .= ' --usb_port ' . $port;
+		//$cmd .= ' --usb_port ' . $port;
 		$cmd .= ' --loglevel ' . log::convertLogLevel(log::getLogLevel('duibridge'));
     // $cmd .= ' --loglevel INFO';
-		$cmd .= ' --config_folder ' . $config_path;
+		$cmd .= ' --config_pins_path ' . $config_pins_path;
+		$cmd .= ' --config_ports_path ' . $config_ports_path;
 		$cmd .= ' --pid ' . jeedom::getTmpFolder('duibridge') . '/deamon.pid';
 
 		log::add('duibridge', 'info', 'Lancement démon duibridge : ' . $cmd);

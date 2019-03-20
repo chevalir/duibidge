@@ -90,7 +90,7 @@ class Arduino_Node(object):
     logger.debug( "Arduino_Node::RUN" )
     self.init_serial_com()
     self.current_request=Arduino_Request("","") ## empty request to initialize 
-    self.current_request.received("") ## call to directly close the request
+    self.current_request.received("") ## force close the request
     while True:
       time.sleep(0.1)
       if self.current_request.done(): ## waitting the end of the current request
@@ -98,8 +98,13 @@ class Arduino_Node(object):
           self.read_queue()
       line = self.read_serial() ## check if the arduino have sothing for us.
       if line != "" and not ( "DBG" in line ):
-        if not self.current_request.done() and not self.current_request.is_expected(line):
+        if not self.current_request.done() and self.current_request.is_expected(line):
+          self.current_request.received(line)
+          logger.debug( "Answer expected")
+        else:
           self.send_queue.put(line) ## No task in progress or not expected answer ... 
+          logger.debug( "sent to queue")
+
       ## @TODO Manage expected answer
         
   def reset_with_DTR(self):
@@ -141,20 +146,20 @@ class Arduino_Node(object):
     if line != '':
       line = line.replace('\n', '')
       line = line.replace('\r', '')
-      logger.debug("read_serial :"+line)
+      logger.debug("read_serial:"+line)
     return line
 
   def read_queue(self):
-    arduino_request = self.request_queue.get(False)
-    logger.debug( "read_queue:"+str(arduino_request.request) )
-    arduino_request.start()
-    if arduino_request.request[0:2] in ['CP', 'SP']:
-      self.write_serial(bytes(arduino_request.request))
+    self.current_request = self.request_queue.get(False)
+    logger.debug( "read_queue:"+str(self.current_request.request) )
+    self.current_request.start()
+    if self.current_request.request[0:2] in ['CP', 'SP']:
+      self.write_serial(bytes(self.current_request.request))
     else :
-      arduino_request.received("")
+      self.current_request.received("") ## to force close the request
     self.request_queue.task_done()
 
-  def write_serial(self, cmd): ## @TODO MANAGE expected answer  
+  def write_serial(self, cmd): 
     while len(cmd) > 0:
       self.SerialPort.write(cmd[:64]) ## send the first bloc 64 char    
       cmd = cmd[64:] ## remove the first bloc from the request.
@@ -235,77 +240,20 @@ class MQTT_Client(paho.Client):
     self.publish( sub_topic, mess )
 
   def subscribe_topics(self, list_of_topic):
-    ##logger.debug(list_of_topic)
+    
     for topic in list_of_topic:
       self.subscribe(topic)
+      logger.debug("subscribe_topic :"+str(topic))
 
-  def run(self, broker, sub_topic, qq):
+  def run(self, broker, qq):
     self.disable_logger()
     self.queue = qq
     self.connect(broker, 1883, 60)
-    ##self.subscribe( sub_topic+"/#", 0)
     rc = 0
     while rc == 0:
       rc = self.loop_start()
     return rc
 
-
-''' -----------------------------------------
-'''
-class Arduino_Config(object):
-
-  def __init__(self, conf_file_path):
-    self.conf_file_path=conf_file_path
-    self.ArduinoStekchVersion = "0.0.0"
-    self.ArduinoQty = 0
-    self.Arduino_ports = {}
-    self.pid_file =""
-
-  def load_node_config(self):
-    if os.path.exists( self.conf_file_path ):
-      #open the xml file for reading:
-      f = open( self.conf_file_path ,'r')
-      data = f.read()
-      f.close()
-  
-      try:
-        xmlDom = minidom.parseString(data)
-      except:
-        print ("Error: problem in the config_arduidom.xml file, cannot process it")
-        logger.debug('Error to read file : '+self.conf_file_path)
-  
-      # ----------------------
-      # Serial device
-      self.ArduinoStekchVersion = self.read_config_item( xmlDom, "ArduinoVersion")
-      self.ArduinoQty = int(self.read_config_item( xmlDom, "ArduinoQty"))
-      logger.debug("Arduino Version:{} Qty:{}".format( self.ArduinoStekchVersion, self.ArduinoQty))
-    
-      # ----------------------
-      # SERIALS
-      for n_node in range(1, 1+self.ArduinoQty):
-        port = self.read_config_item( xmlDom, "A{}_serial_port".format(n_node))
-        self.Arduino_ports.update({n_node : port })
-      logger.debug( self.Arduino_ports )
-      # -----------------------
-      # DAEMON
-      self.pid_file = self.read_config_item( xmlDom, "daemon_pidfile")
-      logger.debug("Daemon_pidfile: " + self.pid_file)
-    
-    else:
-      # config file not found, set default values
-      logger.error("Error: Configuration file not found (" + self.conf_file_path  + ") Line: ")
-  
-  def read_config_item(self, xmlDom, configItem):
-    # Get config item
-    xmlData = ""
-    try:
-      xmlTag = xmlDom.getElementsByTagName( configItem )
-      xmlData = xmlTag[0].firstChild.data
-      logger.debug(configItem + " : " +xmlTag[0].firstChild.data)
-    except:
-      logger.debug('The item tag not found in the config file')
-      xmlData = ""
-    return xmlData
 
 
 ''' -----------------------------------------
@@ -330,10 +278,12 @@ class Pin_def:
 '''
 class Pin_Config(object):
 
-  def __init__(self, conf_file_path, conf_save_path=None):
-    self.conf_file_path=conf_file_path
+  def __init__(self, ID, conf_pins_path, conf_ports_path, conf_save_path=None):
+    self.id = ID
+    self.conf_pins_path=conf_pins_path
+    self.conf_ports_path=conf_ports_path
     if conf_save_path==None:
-      self.conf_save_path=conf_file_path
+      self.conf_save_path=conf_pins_path
     else:
       self.conf_save_path=conf_save_path
 
@@ -346,46 +296,60 @@ class Pin_Config(object):
     self.DPIN=14  #default Digital Pin number
     self.APIN=6   #default Alalog pin number 
     self.CPIN=32  #default Custom pin number
-    self.decode={}
+    self.pins_decode={}
     self.cp_list = []  # use to send CP command to arduino CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc
+    self.port=None
 
-  def load_config(self, ID, alldecode=None):
+  def load_port_config(self, ports_decode=None):
     try:
-      if not alldecode == None:
-        self.alldecode = alldecode
-      else :   
-        logger.debug(self.conf_file_path + " to load ")
+      if ports_decode == None:
+        logger.debug(self.conf_ports_path + " to load ")
         # Get a file object with write permission.
-        file_object = open(self.conf_file_path, 'r')
-        logger.debug(self.conf_file_path + " loaded ") 
+        file_object = open(self.conf_ports_path, 'r')
+        logger.debug(self.conf_ports_path + " loaded ") 
         # Load JSON file data to a python dict object.
-        self.alldecode = json.load(file_object)
+        ports_decode = json.load(file_object)
+        file_object.close()
+      self.port = ports_decode["{}_serial_port".format(self.id)]
+    except Exception as e:
+      print(e)
+      return None
+    return 
+
+  def load_pin_config(self, all_pins_decode=None):
+    try:
+      if all_pins_decode == None:
+        logger.debug(self.conf_pins_path + " to load ")
+        # Get a file object with write permission.
+        file_object = open(self.conf_pins_path, 'r')
+        logger.debug(self.conf_pins_path + " loaded ") 
+        # Load JSON file data to a python dict object.
+        all_pins_decode = json.load(file_object)
         file_object.close()
     except Exception as e:
       print(e)
       return
-    if type(self.alldecode) == list:
-      for i in range(len(self.alldecode)):
-        if self.alldecode[i]['identifier'] == ID: ## seach A1, or A2, ...
-          self.decode = self.alldecode[i]
-    if not self.decode == None:
-      self.ID = str(self.decode['identifier'])
-      print(self.ID)
-      self.rootNode = str(self.decode['name'])
-      cardType = self.decode['card']
+    if type(all_pins_decode) == list:
+      for i in range(len(all_pins_decode)):
+        if all_pins_decode[i]['identifier'] == self.id: ## seach A1, or A2, ...
+          self.pins_decode = all_pins_decode[i]
+    if not self.pins_decode == None:
+      self.rootNode = str(self.pins_decode['name'])
+      cardType = self.pins_decode['card']
       if cardType.find('UNO'):
         self.DPIN=14
         self.APIN=6
-        self.CPIN=32    
+        self.CPIN=32
       for dp in range(self.DPIN + self.APIN + self.CPIN):
         self.cp_list.append('z') 
       self.decode_digital()
       self.decode_ana()
       self.decode_custom()
       self.decode_radio()
+    return all_pins_decode
 
   def decode_digital(self):
-    pins = self.decode['digitals']['dpins']
+    pins = self.pins_decode['digitals']['dpins']
     pin_tag = 'card_pin'
     for pinNum in range(len(pins)):
       thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
@@ -400,7 +364,7 @@ class Pin_Config(object):
       self.cp_list[thepin]=mode
   
   def decode_ana(self):
-    pins = self.decode['analog']['apins']
+    pins = self.pins_decode['analog']['apins']
     pin_tag = 'card_pin'
     for pinNum in range(len(pins)):
       thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
@@ -413,7 +377,7 @@ class Pin_Config(object):
       self.cp_list[self.DPIN + thepin]=mode
 
   def decode_custom(self):
-    pins = self.decode['custom']['cpins']
+    pins = self.pins_decode['custom']['cpins']
     pin_tag = 'custom_pin'
     for pinNum in range(len(pins)):
       thepin = int(pins[pinNum][pin_tag])
@@ -428,7 +392,7 @@ class Pin_Config(object):
     ##logger.debug(self.custom_vpins)
 
   def decode_radio(self):
-    pins = self.decode['radio']['cradio']
+    pins = self.pins_decode['radio']['cradio']
     ## @TODO del  pin_tag = 'typeradio'
     for pinNum in range(len(pins)):
       ## @TODO del   prefix_topic=''
@@ -458,10 +422,10 @@ class Pin_Config(object):
         in the configuration editor
     '''
     status_topic='radio/'+radiocode+"/"+str(device)
-    self.decode['radio']['cradio'].append({'typeradio': 'H; Chacon DIO', 'radiocode': radiocode, 'topic': status_topic
+    self.pins_decode['radio']['cradio'].append({'typeradio': 'H; Chacon DIO', 'radiocode': radiocode, 'topic': status_topic
       , 'prefix': True, 'mode' : 'tr; Trans./Recep.', 'device': device})
     with open(self.conf_save_path, 'w') as outfile:
-      json.dump(self.decode, outfile, sort_keys = True, indent = 2)
+      json.dump(self.pins_decode, outfile, sort_keys = True, indent = 2)
     status_topic=self.get_topic_prefix('r', True)+status_topic
     logger.info(" new topic added " + status_topic)
     self.r_radio_vpins.update({radiocode_key:(device, status_topic)})
@@ -483,6 +447,7 @@ class Pin_Config(object):
 
 
 '''-------------------------------'''                      
+##### TO FIX options.pin_config
 def send_to_topic(pin_num, value, lmqtt):
   global options
   logger.debug(str(pin_num) +" "+ str(value)+" "+ str(options.pin_config.DPIN))
@@ -563,53 +528,52 @@ def main(argv=None):
   ##
   logger.info("# duiBridged - duinode bridge for Jeedom # loglevel="+options.loglevel)
   
-  configFile = os.path.join(myrootpath, "config_duibridge_nodes.xml")
-  logger.debug("Config file: " + configFile)
-  logger.debug("Read jeedom configuration file")
-  options.Ardno_conf = Arduino_Config(configFile)
-  options.Ardno_conf.load_node_config()
-
-  options.pin_config = Pin_Config(options.config_folder)
-  options.pin_config.load_config("A1")
+  arduino_id="A1"
+  options.pin_config={}
+  options.pin_config.update({arduino_id:Pin_Config(arduino_id, options.config_pins_path, options.config_ports_path)})
+  print(options.pin_config[arduino_id])
+  all_pins_decode = options.pin_config[arduino_id].load_pin_config()
+  options.pin_config[arduino_id].load_port_config()
+  
   
   options.nodes={}
-  arduino_id = options.pin_config.rootNode ## TODO manage several arduino
-  options.to_arduino_queues={arduino_id:Queue()}
-  options.from_arduino_queues={arduino_id:Queue()}
+  rootNode = options.pin_config[arduino_id].rootNode ## TODO manage several arduino
+  options.to_arduino_queues={rootNode:Queue()}
+  options.from_arduino_queues={rootNode:Queue()}
 
-  aNode = Arduino_Node(options.Ardno_conf.Arduino_ports[1], options.to_arduino_queues[arduino_id], arduino_id, options.from_arduino_queues[arduino_id])
-  options.nodes.update({arduino_id:aNode})
+  aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[rootNode], rootNode, options.from_arduino_queues[rootNode])
+  options.nodes.update({rootNode:aNode})
   mqttc1 = MQTT_Client()
-  rc = mqttc1.run("localhost", arduino_id, options.to_arduino_queues[arduino_id])
-  cp_cmd =options.pin_config.get_pin_conf_cmd()
+  cp_cmd =options.pin_config[arduino_id].get_pin_conf_cmd()
   request = Arduino_Request(cp_cmd, "CP_OK")
-  options.to_arduino_queues[arduino_id].put(request)
+  options.to_arduino_queues[rootNode].put(request)
   ## subscribe to digital topics if any
   print("----\n\n")
-  pin_list = options.pin_config.all_pins.values()
+  pin_list = options.pin_config[arduino_id].all_pins.values()
   for pin in pin_list:
     ##(mode, topic) = m_t
     if not ( pin.mode in Pin_def.mode_status ):
       mqttc1.subscribe(pin.topic)
-      logger.debug('subscribe :'+pin.topic)
-    else:
-      logger.debug('not subscribe {} {}:'.format(pin.mode, pin.topic))
-  ## subscribe to radio topics
-  topics = options.pin_config.t_radio_vpins.keys()
+      ##logger.debug('subscribe :'+pin.topic)
+    ##else:
+      ##logger.debug('not subscribe {} {}:'.format(pin.mode, pin.topic))
+  ''' subscribe to radio topics '''
+  topics = options.pin_config[arduino_id].t_radio_vpins.keys()
   mqttc1.subscribe_topics(topics)
+  mqttc1.run("localhost", options.to_arduino_queues[rootNode])
 
 
   while True :
     time.sleep(0.1)
-    if not options.from_arduino_queues[arduino_id].empty(): 
-      mess = str(options.from_arduino_queues[arduino_id].get(False))
+    if not options.from_arduino_queues[rootNode].empty(): 
+      mess = str(options.from_arduino_queues[rootNode].get(False))
       logger.debug( "from_arduino_queues:"+mess )
       if '>>' in mess[:6]:
         (pin, value) = mess.split(">>")
         value = value.replace("<<", '')
         logger.debug(str(pin) +" "+ str(value))
         send_to_topic(pin, value, mqttc1)
-      options.from_arduino_queues[arduino_id].task_done()
+      options.from_arduino_queues[rootNode].task_done()
 
     
   logger.debug("THE END")
@@ -625,9 +589,10 @@ def write_pid(path):
 def cli_parser(argv=None):
   parser = optparse.OptionParser("usage: %prog -h   pour l'aide")
   parser.add_option("-l", "--loglevel", dest="loglevel", default="INFO", type="string", help="Log Level (INFO, DEBUG, ERROR")
-  parser.add_option("-p", "--usb_port", dest="usb_port", default="auto", type="string", help="USB Port (Auto, <Usb port> ")
-  parser.add_option("-c", "--config_folder", dest="config_folder", default=".", type="string", help="config folder path")
-  parser.add_option("-i", "--pid", dest="pid_path", default="./duibridge.pid", type="string", help="pid file folder folder path")
+  ##parser.add_option("-p", "--usb_port", dest="usb_port", default="auto", type="string", help="USB Port (Auto, <Usb port> ")
+  parser.add_option("-c", "--config_pins_path", dest="config_pins_path", default=".", type="string", help="config pin file path")
+  parser.add_option("-p", "--config_ports_path", dest="config_ports_path", default=".", type="string", help="config ports file path")
+  parser.add_option("-i", "--pid", dest="pid_path", default="./duibridge.pid", type="string", help="pid file path")
 
   return parser.parse_args(argv)
 
