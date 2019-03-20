@@ -103,18 +103,19 @@ class duibridge extends eqLogic {
 			$daemon_path = dirname(__FILE__) . '/../../resources/deamon';
 			if (file_exists($daemon_path . '/duibridge_ports.json')) unlink($daemon_path . '/duibridge_ports.json');
 			$replace_config = array(
-					/*'#ArduinoVersion#' => "1.0.0",*/
+					'#ArduinoVersion#' => "1.0.0",
 					'#ArduinoQty#' => config::byKey("arduinoqty","duibridge",0),
 			);
 
 			for ($i = 1; $i <= $nbArduinos; $i++) {
-					$replace_config['#A' . $i . '_serial_port#'] = config::byKey('A' . $i . '_port', 'duibridge', '');
-			}/*
+				  $port = jeedom::getUsbMapping(config::byKey('A' . $i . '_port', 'duibridge', ''));
+					$replace_config['#A' . $i . '_serial_port#'] = $port;
+			}
 			if ($nbArduinos < 8) {
-				for ($i = $nbArduinos; $i <= 8; $i++) {	
+				for ($i = $nbArduinos+1; $i <= 8; $i++) {	
 					$replace_config['#A' . $i . '_serial_port#'] = "NULL";
 				 }	
-			}*/
+			}
 			$config = file_get_contents($daemon_path . '/duibridge_ports_template.json');
 			log::add('duibridge', 'info', 'Config port before'.$config);
 

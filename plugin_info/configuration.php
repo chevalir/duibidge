@@ -70,14 +70,6 @@ $ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
                                             echo '<option value="' . $name . '">' . $name . ' (' . $value . ')</option>';
                                             }
                                 ?>
-                                <option value="/dev/ttyUSB0">{{Arduino sur USB /dev/ttyUSB0}}</option>
-                                <option value="/dev/ttyUSB1">{{Arduino sur USB /dev/ttyUSB1}}</option>
-                                <option value="/dev/ttyUSB2">{{Arduino sur USB /dev/ttyUSB2}}</option>
-                                <option value="/dev/ttyACM0">{{Arduino sur USB /dev/ttyACM0}}</option>
-                                <option value="/dev/ttyACM1">{{Arduino sur USB /dev/ttyACM1}}</option>
-                                <option value="/dev/ttyACM2">{{Arduino sur USB /dev/ttyACM2}}</option>
-                                <option value="/dev/ttyS0">{{Arduino sur USB /dev/ttyS0}}</option>
-                                ?>
                             </select>
                         </div>
                     </div>

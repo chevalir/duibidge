@@ -1,0 +1,12 @@
+{    
+    "version":"1.0.0",
+    "ArduinoQty":"2",
+    "A1_serial_port":"/dev/ttyUSB0",
+    "A2_serial_port":"/dev/ttyAMA0",
+    "A3_serial_port":"NULL",
+    "A4_serial_port":"NULL",
+    "A5_serial_port":"NULL",
+    "A6_serial_port":"NULL",
+    "A7_serial_port":"NULL",
+    "A8_serial_port":"NULL"
+}
