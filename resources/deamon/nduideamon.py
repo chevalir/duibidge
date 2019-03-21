@@ -35,17 +35,18 @@ def decode_chacon(radio_message): ## TODO to return directly the satus to Jeedom
   return
 
 
-def build_command(topic, value):
+def build_command(arduino_id, topic, value):
+  pconfig = options.pin_config[arduino_id]
   try:
-    pin_num = options.pin_config.all_topics[topic]
-    if pin_num == options.pin_config.transmeter_pin:
-      (device, radiocode) = options.pin_config.t_radio_vpins[topic]
-      cmd = format_chacon( options.pin_config.transmeter_pin, radiocode, 0, value, device-1) ## "SP03H128021900100"
-      ## @TODO send "?>>RFD:"+radiocode+":A:"+value*100+device-1":P:4<<"
-      request = Arduino_Request(cmd, cmd+"_OK", {"radiocode":radiocode, "action":value, "device":(device-1)} )
+    pin_num = pconfig.all_topics[topic]
+    if pin_num == pconfig.transmeter_pin:
+      (device, radiocode) = pconfig.t_radio_vpins[topic]
+      cmd = format_chacon( pconfig.transmeter_pin, radiocode, 0, value, device-1) ## "SP03H128021900100"
+      ## "?>>RFD:"+radiocode+":A:"+value*100+device-1":P:4<<"
+      request = Arduino_Request(cmd, cmd+"_OK", {"message":"RFD", "radiocode":radiocode, "action":int(value)==1, "device":(device)} )
       ##"?>>RFD:{}:A:{}:P:4<<".format(radiocode, int(value)*100+device-1))
     else:
-      pin_info = options.pin_config.all_pins[pin_num]
+      pin_info = pconfig.all_pins[pin_num]
       if pin_info.mode in Pin_def.mode_out_time:
         cmd = "SP{:0>2}{:0>4}".format(pin_num,value)
       if pin_info.mode in Pin_def.mode_out:
@@ -57,7 +58,7 @@ def build_command(topic, value):
       request = Arduino_Request(cmd, cmd+"_OK")
     pass
   except:
-    if topic in options.pin_config.all_topics.keys():
+    if topic in pconfig.all_topics.keys():
       logger.debug("topic  found "+topic)
     else:
       logger.debug("topic not found "+topic)
@@ -73,13 +74,14 @@ def build_command(topic, value):
 ''' -----------------------------------------
 '''
 class Arduino_Node(object):
-  def __init__(self, port, in_queue, arduino_id, out_queue):
+  def __init__(self, port, in_queue, arduino_id, out_queue, mqtt):
     self.usb_port=port
     self.request_queue=in_queue
     self.send_queue=out_queue
     self.ID = arduino_id
     self.baud=115200
     self.current_request=None
+    self.mqtt=mqtt
     ## Open tread to listen arduino serial port
     thread = threading.Thread(target=self.run, args=())
     thread.daemon = True    # Daemonize thread
@@ -100,7 +102,13 @@ class Arduino_Node(object):
       if line != "" and not ( "DBG" in line ):
         if not self.current_request.done() and self.current_request.is_expected(line):
           self.current_request.received(line)
-          logger.debug( "Answer expected")
+          if not (self.current_request.return_mess==None):
+            send_radio_to_topic(self.ID, self.mqtt, 
+              self.current_request.return_mess["message"], 
+              self.current_request.return_mess["radiocode"], 
+              self.current_request.return_mess["device"], 
+              self.current_request.return_mess["action"])
+          ##logger.debug( "Answer expected")
         else:
           self.send_queue.put(line) ## No task in progress or not expected answer ... 
           logger.debug( "sent to queue")
@@ -187,8 +195,9 @@ class Arduino_Request:
     return self.request
 
   def check_status(self):
-    logger.debug("Arduino_Request start:{} timeout:{} time{}".format(self.start_time, self.timeout, time.time()))
+    ##logger.debug("Arduino_Request start:{} timeout:{} time{}".format(self.start_time, self.timeout, time.time()))
     if (self.status == "STARTED") and (int(time.time()) - self.start_time) >= self.timeout:
+      logger.debug("Arduino_Request:{} start:{} timeout:{} time:{}".format(self.request, self.start_time, self.timeout, time.time()))
       self.received("TIMEOUT")
     return self.status
 
@@ -221,15 +230,15 @@ class MQTT_Client(paho.Client):
     logger.debug("on_connect rc: "+str(rc))
 
   def on_message(self, mqttc, obj, msg):
-    self.queue.put(build_command( msg.topic, msg.payload ))
-    logger.debug("on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
+    #logger.debug("on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
+    self.queue.put(build_command(self.arduino_id, msg.topic, msg.payload ))
 
   def on_publish(self, mqttc, obj, mid):
     ##print("on_publish mid: "+str(obj))
     return
 
   def on_subscribe(self, mqttc, obj, mid, granted_qos):
-    ###print("on_subscribe: "+str(mid)+" "+str(granted_qos))
+    ##print("on_subscribe: "+str(mid)+" "+str(granted_qos))
     return
 
   def on_log(self, mqttc, obj, level, string):
@@ -240,12 +249,12 @@ class MQTT_Client(paho.Client):
     self.publish( sub_topic, mess )
 
   def subscribe_topics(self, list_of_topic):
-    
     for topic in list_of_topic:
-      self.subscribe(topic)
-      logger.debug("subscribe_topic :"+str(topic))
+      self.subscribe(topic,0)
+      ##logger.debug("MQTT_Client::subscribe_topic :"+str(topic))
 
-  def run(self, broker, qq):
+  def run(self, arduino_id, broker, qq):
+    self.arduino_id = arduino_id
     self.disable_logger()
     self.queue = qq
     self.connect(broker, 1883, 60)
@@ -447,30 +456,32 @@ class Pin_Config(object):
 
 
 '''-------------------------------'''                      
-##### TO FIX options.pin_config
-def send_to_topic(pin_num, value, lmqtt):
+def send_to_topic(arduino_id, pin_num, value, lmqtt):
   global options
-  logger.debug(str(pin_num) +" "+ str(value)+" "+ str(options.pin_config.DPIN))
+
+  pconfig = options.pin_config[arduino_id]
+  logger.debug( str(arduino_id) + " "+str(pin_num) +" "+ str(value) )
   thePin = int(pin_num)
   try:
-    if thePin in options.pin_config.all_pins.keys():
-      pin_info = options.pin_config.all_pins[thePin]
+    if thePin in pconfig.all_pins.keys():
+      pin_info = pconfig.all_pins[thePin]
       if pin_info.mode in Pin_def.mode_status :
         if pin_info.mode in ('r'): ## Radio receptor
-          send_radio_to_topic(lmqtt, value)
-        else:      
+          send_radio_to_topic(arduino_id, lmqtt, value)
+        else:     
           lmqtt.publish_message(pin_info.topic, value)    
       else:
         logger.error( 'unexpected mode:'+pin_info.mode )
     else :
       logger.info("arduino send value for Pin undefine in conf pin:{} value:{}".format(pin_num,value) )
   except KeyError:
-    logger.error( "KeyError not found {} in {}".format(pin_num,  str(options.pin_config.all_pins.keys())))
+    logger.error( "KeyError not found {} in {}".format(pin_num,  str(pconfig.all_pins.keys())))
   
-
 '''-------------------------------'''                      
-def send_radio_to_topic(mqtt, value, radiocode=None, device=None, device_on=None):
+def send_radio_to_topic(arduino_id, mqtt, value, radiocode=None, device=None, device_on=None):
   global options
+
+  pconfig = options.pin_config[arduino_id]
   logger.debug("send_radio_to_topic : {} {}".format(value, radiocode))
   if "RFD" in value:
     try:
@@ -483,14 +494,14 @@ def send_radio_to_topic(mqtt, value, radiocode=None, device=None, device_on=None
           device = device - 100
       value = On_Off[int(device_on)]
       radiocode_key = '{}#{:0>2}'.format(radiocode, device) ## search if a topic is define for this device
-      if radiocode_key not in options.pin_config.r_radio_vpins: 
+      if radiocode_key not in pconfig.r_radio_vpins: 
         radiocode_key = '{}#{:0>2}'.format(radiocode, 0) ## search if a topic is define for all devices of this radiocode
-        if radiocode_key not in options.pin_config.r_radio_vpins:
+        if radiocode_key not in pconfig.r_radio_vpins:
           logger.info("radio code={0} device ={1} not define in config ".format(radiocode, device) )
-          options.pin_config.add_radio_conf(radiocode, device, radiocode_key) ## no config for this radiocode so added with default values
+          pconfig.add_radio_conf(radiocode, device, radiocode_key) ## no config for this radiocode so added with default values
           value = "{0}={1}".format(device, value)      
-      (device, topic) = options.pin_config.r_radio_vpins.get(radiocode_key)
-      logger.info("radio code={0} device ={1} topic {2} ".format(radiocode_key, device, topic) )
+      (device, topic) = pconfig.r_radio_vpins.get(radiocode_key)
+      logger.info("radio code={0} device ={1} topic {2} value: {3} ".format(radiocode_key, device, topic, value) )
       mqtt.publish_message(topic, value)
     except Exception as e:
       logger.error( "send_radio_to_topic exception" )
@@ -538,15 +549,16 @@ def main(argv=None):
   
   options.nodes={}
   rootNode = options.pin_config[arduino_id].rootNode ## TODO manage several arduino
-  options.to_arduino_queues={rootNode:Queue()}
-  options.from_arduino_queues={rootNode:Queue()}
+  options.to_arduino_queues={arduino_id:Queue()}
+  options.from_arduino_queues={arduino_id:Queue()}
 
-  aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[rootNode], rootNode, options.from_arduino_queues[rootNode])
-  options.nodes.update({rootNode:aNode})
   mqttc1 = MQTT_Client()
+  mqttc1.run(arduino_id, "localhost", options.to_arduino_queues[arduino_id])
+  aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, options.from_arduino_queues[arduino_id], mqttc1)
+  options.nodes.update({arduino_id:aNode})
   cp_cmd =options.pin_config[arduino_id].get_pin_conf_cmd()
   request = Arduino_Request(cp_cmd, "CP_OK")
-  options.to_arduino_queues[rootNode].put(request)
+  options.to_arduino_queues[arduino_id].put(request)
   ## subscribe to digital topics if any
   print("----\n\n")
   pin_list = options.pin_config[arduino_id].all_pins.values()
@@ -560,20 +572,19 @@ def main(argv=None):
   ''' subscribe to radio topics '''
   topics = options.pin_config[arduino_id].t_radio_vpins.keys()
   mqttc1.subscribe_topics(topics)
-  mqttc1.run("localhost", options.to_arduino_queues[rootNode])
 
 
   while True :
     time.sleep(0.1)
-    if not options.from_arduino_queues[rootNode].empty(): 
-      mess = str(options.from_arduino_queues[rootNode].get(False))
+    if not options.from_arduino_queues[arduino_id].empty(): 
+      mess = str(options.from_arduino_queues[arduino_id].get(False))
       logger.debug( "from_arduino_queues:"+mess )
       if '>>' in mess[:6]:
         (pin, value) = mess.split(">>")
         value = value.replace("<<", '')
         logger.debug(str(pin) +" "+ str(value))
-        send_to_topic(pin, value, mqttc1)
-      options.from_arduino_queues[rootNode].task_done()
+        send_to_topic(arduino_id, pin, value, mqttc1)
+      options.from_arduino_queues[arduino_id].task_done()
 
     
   logger.debug("THE END")
