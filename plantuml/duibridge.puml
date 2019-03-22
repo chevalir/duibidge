@@ -1,0 +1,33 @@
+@startuml
+skinparam handwritten true
+
+skinparam usecase {
+	BackgroundColor DarkSeaGreen
+	BorderColor DarkSlateGray
+
+	BackgroundColor<< Main >> YellowGreen
+	BorderColor<< Main >> YellowGreen
+	
+	ArrowColor Olive
+	ActorBorderColor black
+	ActorFontName Courier
+
+	ActorBackgroundColor<< Human >> Gold
+}
+
+
+
+actor :You: as you << Human >>
+actor :Jeedom: as jeedom << Application >>
+actor :duiBridge: as dui << Plugins >>
+actor :jMQTT: as mqtt << Plugins >>
+(Install duiBridge) as (idui)
+(install mqtt) as imqtt
+you -> imqtt
+you -> idui
+idui ---> jeedom
+imqtt ---> jeedom
+
+you -> (Configure pins)
+
+@enduml
