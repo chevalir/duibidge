@@ -1,0 +1,82 @@
+@startuml "d1"
+skinparam handwritten true
+
+skinparam usecase {
+	BackgroundColor DarkSeaGreen
+	BorderColor DarkSlateGray
+
+	BackgroundColor<< Main >> YellowGreen
+	BorderColor<< Main >> YellowGreen
+
+	ArrowColor Olive
+	ActorBorderColor black
+	ActorFontName Courier
+
+	ActorBackgroundColor<< Human >> Gold
+}
+
+actor :You: as you << Human >>
+actor :Jeedom: as jeedom << Application >>
+actor :duiBridge: as dui << Plugins >>
+actor :jMQTT: as mqtt << Plugins >>
+(Install duiBridge) as (idui)
+(install mqtt) as imqtt
+you -> imqtt
+you -> idui
+idui ---> jeedom
+imqtt ---> jeedom
+
+you -> (Configure pins)
+
+@enduml
+
+@startuml "d2"
+
+node mqtt {
+	queue "home/A1/status/salon/lampe"
+	queue "home/A1/action/salon/lampe"
+	queue "home/A2/status/bain/lampe"
+	queue "home/A2/status/bain/vmc"
+	queue "home/A2/action/bain/lampe"
+	queue "home/A2/action/bain/vmc"
+}
+
+package arduino {
+	card Arduino1 as A1 {
+		component "sketch Arduidom" as sk2
+	}
+
+	card Arduino2 as A2 {
+		component "sketch Arduidom" as sk1
+	}
+}
+
+component "duibridge" <<deamon>> as duibridged
+file "pinConf.json" as pinConf
+file "duibridge_port.json" as ports
+
+
+duibridged -- A2 : USB1
+duibridged -- A1 : USB2
+
+
+
+component Jeedom {
+	["duibridge plugins"] <<plugins>> as duibridgep
+	["jMQTT plugins"] as jmqtt
+}
+
+
+duibridged <.. pinConf
+duibridged <.. ports
+
+
+duibridged -- mqtt
+
+jmqtt -- mqtt
+duibridgep ..> pinConf
+duibridgep ..> ports
+
+
+
+@enduml

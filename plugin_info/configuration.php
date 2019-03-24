@@ -64,24 +64,13 @@ $ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
                         <div class="col-lg-9">
                             <select class="configKey form-control" data-l1key="A<?php echo $i ?>_port">
                                 <option value="none">{{NULL}}</option>
-                                <option value="auto">{{Auto}}</option>
+                                <option value="bridge">{{Arduidom bridge}}</option>
                                 <?php
                                             foreach (jeedom::getUsbMapping('', true) as $name => $value) {
                                             echo '<option value="' . $name . '">' . $name . ' (' . $value . ')</option>';
                                             }
                                 ?>
                             </select>
-                        </div>
-                    </div>
-                </fieldset>
-            </form>
-            <form>
-                <fieldset>
-                    <legend><i class="fa fa-list-alt"></i> {{Général}}</legend>
-                    <div class="form-group">
-                        <label class="col-sm-4 control-label">{{Mode bridge (utilisation avec le plugins Arduidom)}}</label>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="configKey" data-l1key="bridgemode"/>
                         </div>
                     </div>
                 </fieldset>

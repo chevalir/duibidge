@@ -108,8 +108,11 @@ class duibridge extends eqLogic {
 			);
 
 			for ($i = 1; $i <= $nbArduinos; $i++) {
-				  $port = jeedom::getUsbMapping(config::byKey('A' . $i . '_port', 'duibridge', ''));
-					$replace_config['#A' . $i . '_serial_port#'] = $port;
+				$port = config::byKey('A' . $i . '_port', 'duibridge', '');
+				if ($port != 'bridge') {
+					$port = jeedom::getUsbMapping($port);
+				}
+				$replace_config['#A' . $i . '_serial_port#'] = $port;
 			}
 			if ($nbArduinos < 8) {
 				for ($i = $nbArduinos+1; $i <= 8; $i++) {	
@@ -141,7 +144,7 @@ class duibridge extends eqLogic {
 		}
 		$return['launchable'] = 'ok';
 		$port = config::byKey('A1_port', 'duibridge');
-		if ($port != 'auto') {
+		if ($port != 'bridge') {
 			$port = jeedom::getUsbMapping($port);
 			if (@!file_exists($port)) {
 				$return['launchable'] = 'nok';
@@ -158,13 +161,7 @@ class duibridge extends eqLogic {
 		$deamon_info = self::deamon_info();
 		if ($deamon_info['launchable'] != 'ok') {
 			throw new Exception(__('Veuillez vérifier la configuration', __FILE__));
-		}/*
-		$port = config::byKey('A1_port', 'duibridge');
-		if ($port != 'auto') {
-			$port = jeedom::getUsbMapping($port);
-		}*/
-    /*$ressource_path = realpath(dirname(__FILE__) . '/../../ressources');*/
-
+		}
 		$duibridge_path = dirname(__FILE__) . '/../../resources';
 		$config_pins_path = dirname(__FILE__) . '/../../pinconf/pinConf.json';
 		$config_ports_path = $duibridge_path . '/deamon/duibridge_ports.json';
@@ -173,9 +170,7 @@ class duibridge extends eqLogic {
 			$suppressRefresh = 1;
 		}
     $cmd = '/usr/bin/python ' . $duibridge_path . '/deamon/nduideamon.py';
-		//$cmd .= ' --usb_port ' . $port;
 		$cmd .= ' --loglevel ' . log::convertLogLevel(log::getLogLevel('duibridge'));
-    // $cmd .= ' --loglevel INFO';
 		$cmd .= ' --config_pins_path ' . $config_pins_path;
 		$cmd .= ' --config_ports_path ' . $config_ports_path;
 		$cmd .= ' --pid ' . jeedom::getTmpFolder('duibridge') . '/deamon.pid';
@@ -208,7 +203,7 @@ class duibridge extends eqLogic {
 		}
 		system::kill('nduideamon.py');
 		$port = config::byKey('port', 'duibridge');
-		if ($port != 'auto') {
+		if ($port != 'bridge') {
 			system::fuserk(jeedom::getUsbMapping($port));
 		}
 		sleep(1);

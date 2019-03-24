@@ -30,10 +30,6 @@ def format_chacon(t_pin, radiocode, group, action, device):
   cmd = "SP{:0>2}H{}{}{}{:0>2}".format(t_pin, radiocode, group, action, device )
   return cmd 
 
-## @TODO  manage SP03H128021900000_OK to post status to topic 
-def decode_chacon(radio_message): ## TODO to return directly the satus to Jeedom
-  return
-
 
 def build_command(arduino_id, topic, value):
   pconfig = options.pin_config[arduino_id]
@@ -82,49 +78,58 @@ class Arduino_Node(object):
     self.baud=115200
     self.current_request=None
     self.mqtt=mqtt
-    ## Open tread to listen arduino serial port
+    ''' Open tread to listen arduino serial port'''
     thread = threading.Thread(target=self.run, args=())
-    thread.daemon = True    # Daemonize thread
-    thread.start()          # Start the execution
+    thread.daemon = True
+    thread.start()
 
   def run(self):
     '''Method that runs forever'''
     logger.debug( "Arduino_Node::RUN" )
     self.init_serial_com()
-    self.current_request=Arduino_Request("","") ## empty request to initialize 
-    self.current_request.received("") ## force close the request
+    '''start with an empty request in state: done'''
+    self.current_request=Arduino_Request("","")
+    self.current_request.received("")
     while True:
       time.sleep(0.1)
-      if self.current_request.done(): ## waitting the end of the current request
-        if not self.request_queue.empty(): ## check if a cmd need to be sent to arduino
+      ''' waitting the end of the current request'''
+      if self.current_request.done(): 
+        '''check if a cmd need to be sent to arduino'''
+        if not self.request_queue.empty(): 
           self.read_queue()
-      line = self.read_serial() ## check if the arduino have sothing for us.
+      ''' check if the arduino have something for us.'''    
+      line = self.read_serial() 
       if line != "" and not ( "DBG" in line ):
         if not self.current_request.done() and self.current_request.is_expected(line):
           self.current_request.received(line)
-          if not (self.current_request.return_mess==None):
+          if not (self.current_request.return_mess==None): 
+            ''' automatic status sent to mqtt '''
             send_radio_to_topic(self.ID, self.mqtt, 
               self.current_request.return_mess["message"], 
               self.current_request.return_mess["radiocode"], 
               self.current_request.return_mess["device"], 
-              self.current_request.return_mess["action"])
-          ##logger.debug( "Answer expected")
-        else:
-          self.send_queue.put(line) ## No task in progress or not expected answer ... 
+              self.current_request.return_mess["action"]) 
+        else: 
+          ''' No task in progress or not expected answer 
+              so it's e new value of pin sent by the arduino 
+          '''
+          self.send_queue.put(line) 
           logger.debug( "sent to queue")
-
-      ## @TODO Manage expected answer
         
   def reset_with_DTR(self):
     self.SerialPort.flush()
     self.SerialPort.flushInput()
-    ## hardware reset using DTR line
+    ''' hardware reset using DTR line'''
     self.SerialPort.setDTR(True)
-    time.sleep(0.030) # Read somewhere that 22ms is what the UI does.
+    time.sleep(0.030) 
+    ''' Read somewhere that 22ms is what the UI does.'''
     self.SerialPort.setDTR(False)
     time.sleep(0.200)
     self.SerialPort.flush()
     self.SerialPort.flushInput()
+  
+  def init_arduidom_bridge(self):
+    logger.debug("Arduino_Node::init_arduidom_bridge")
 
   def init_serial_com(self):
     self.SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
@@ -147,7 +152,6 @@ class Arduino_Node(object):
     self.SerialPort.flush()
     self.SerialPort.flushInput()
     logger.debug("Arduino " + str(self.ID) + " ready for action")
-    ##open serial port @@TODO
   
   def read_serial(self):
     line = self.SerialPort.readline()
@@ -164,18 +168,41 @@ class Arduino_Node(object):
     if self.current_request.request[0:2] in ['CP', 'SP']:
       self.write_serial(bytes(self.current_request.request))
     else :
-      self.current_request.received("") ## to force close the request
+      '''to force close the request'''
+      self.current_request.received("") 
     self.request_queue.task_done()
 
   def write_serial(self, cmd): 
     while len(cmd) > 0:
-      self.SerialPort.write(cmd[:64]) ## send the first bloc 64 char    
-      cmd = cmd[64:] ## remove the first bloc from the request.
+      ''' send the first bloc 64 char    '''
+      ''' and remove it from the request.'''
+      self.SerialPort.write(cmd[:64]) 
+      cmd = cmd[64:] 
       if len(cmd) > 0:
-        time.sleep(0.1) ## delay before next bloc (if any)
+        ''' delay before next bloc (if any)'''
+        time.sleep(0.1) 
       else :
-        self.SerialPort.write('\n') ## all blocs sent, now send terminator
+        ''' all blocs sent, now send terminator'''
+        self.SerialPort.write('\n') 
     logger.debug( "write_serial end")
+
+class Arduino_Arduidom(Arduino_Node):
+  def __init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt, arduidom_mqtt=None):
+    Arduino_Node.__init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt)
+
+  def init_serial_com(self):
+    logger.debug( "Arduino_Arduidom write_serial end")
+    pass
+  
+  def write_serial(self, cmd):
+    logger.debug( "Arduino_Arduidom write_serial end")
+    pass
+  
+  def read_serial(self):
+    logger.debug( "Arduino_Arduidom write_serial end")
+    pass
+
+
 
 ''' -----------------------------------------
 '''
@@ -183,7 +210,8 @@ class Arduino_Request:
   def __init__(self, request, expected_answer, return_value=None):
     self.request = request
     self.answer = ""
-    self.status = "INIT"  # INIT|STARTED|OK|KO
+    '''status possible values: INIT|STARTED|OK|KO '''
+    self.status = "INIT"  
     self.timeout = 10
     self.expected = expected_answer
     self.return_mess = return_value
@@ -263,6 +291,10 @@ class MQTT_Client(paho.Client):
       rc = self.loop_start()
     return rc
 
+class MQTT_Arduidom(MQTT_Client):
+  def on_message(self, mqttc, obj, msg):
+    logger.debug("MQTT_Arduidom::on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
+    self.queue.put(msg.payload)
 
 
 ''' -----------------------------------------
@@ -302,21 +334,23 @@ class Pin_Config(object):
     self.all_topics = {}
     self.transmeter_pin = -1
     self.rootNode=''
-    self.DPIN=14  #default Digital Pin number
-    self.APIN=6   #default Alalog pin number 
-    self.CPIN=32  #default Custom pin number
+    '''Default pin number of Arduino UNO'''
+    self.DPIN=14  
+    self.APIN=6   
+    self.CPIN=32  
     self.pins_decode={}
-    self.cp_list = []  # use to send CP command to arduino CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc
+    ''' use to send CP command to arduino CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc'''
+    self.cp_list = []  
     self.port=None
 
   def load_port_config(self, ports_decode=None):
     try:
       if ports_decode == None:
         logger.debug(self.conf_ports_path + " to load ")
-        # Get a file object with write permission.
+        '''Get a file object with write permission.'''
         file_object = open(self.conf_ports_path, 'r')
         logger.debug(self.conf_ports_path + " loaded ") 
-        # Load JSON file data to a python dict object.
+        '''Load JSON file data to a python dict object.'''
         ports_decode = json.load(file_object)
         file_object.close()
       self.port = ports_decode["{}_serial_port".format(self.id)]
@@ -329,10 +363,10 @@ class Pin_Config(object):
     try:
       if all_pins_decode == None:
         logger.debug(self.conf_pins_path + " to load ")
-        # Get a file object with write permission.
+        '''Get a file object with write permission.'''
         file_object = open(self.conf_pins_path, 'r')
         logger.debug(self.conf_pins_path + " loaded ") 
-        # Load JSON file data to a python dict object.
+        '''Load JSON file data to a python dict object.'''
         all_pins_decode = json.load(file_object)
         file_object.close()
     except Exception as e:
@@ -340,7 +374,7 @@ class Pin_Config(object):
       return
     if type(all_pins_decode) == list:
       for i in range(len(all_pins_decode)):
-        if all_pins_decode[i]['identifier'] == self.id: ## seach A1, or A2, ...
+        if all_pins_decode[i]['identifier'] == self.id:
           self.pins_decode = all_pins_decode[i]
     if not self.pins_decode == None:
       self.rootNode = str(self.pins_decode['name'])
@@ -396,16 +430,12 @@ class Pin_Config(object):
       full_topic = self.get_topic_prefix(mode, prefix)+topic
       self.all_pins[self.DPIN + self.APIN + thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.custom)
       self.all_topics[full_topic]=self.DPIN + self.APIN + thepin
-      ### self.custom_vpins[self.DPIN + self.APIN + thepin] = (mode, full_topic)
       self.cp_list[self.DPIN + self.APIN + thepin]=mode
     ##logger.debug(self.custom_vpins)
 
   def decode_radio(self):
     pins = self.pins_decode['radio']['cradio']
-    ## @TODO del  pin_tag = 'typeradio'
     for pinNum in range(len(pins)):
-      ## @TODO del   prefix_topic=''
-      ## @TODO del   typeradio = pins[pinNum][pin_tag].split(";",1)[0]
       mode = pins[pinNum]['mode'].split(";",1)[0]
       topic = pins[pinNum]['topic']
       device = pins[pinNum]['device']
@@ -466,7 +496,8 @@ def send_to_topic(arduino_id, pin_num, value, lmqtt):
     if thePin in pconfig.all_pins.keys():
       pin_info = pconfig.all_pins[thePin]
       if pin_info.mode in Pin_def.mode_status :
-        if pin_info.mode in ('r'): ## Radio receptor
+        ''' chack if the pin is the Radio receptor'''
+        if pin_info.mode in ('r'): 
           send_radio_to_topic(arduino_id, lmqtt, value)
         else:     
           lmqtt.publish_message(pin_info.topic, value)    
@@ -493,13 +524,16 @@ def send_radio_to_topic(arduino_id, mqtt, value, radiocode=None, device=None, de
         if device_on :
           device = device - 100
       value = On_Off[int(device_on)]
-      radiocode_key = '{}#{:0>2}'.format(radiocode, device) ## search if a topic is define for this device
+      ''' search if a topic is define for this device'''
+      radiocode_key = '{}#{:0>2}'.format(radiocode, device) 
       if radiocode_key not in pconfig.r_radio_vpins: 
-        radiocode_key = '{}#{:0>2}'.format(radiocode, 0) ## search if a topic is define for all devices of this radiocode
+        radiocode_key = '{}#{:0>2}'.format(radiocode, 0) 
+        ''' search if a topic is define for all devices of this radiocode'''
         if radiocode_key not in pconfig.r_radio_vpins:
           logger.info("radio code={0} device ={1} not define in config ".format(radiocode, device) )
-          pconfig.add_radio_conf(radiocode, device, radiocode_key) ## no config for this radiocode so added with default values
-          value = "{0}={1}".format(device, value)      
+          ''' when the radiocode if not found in the config it is added in config file with default values '''
+          pconfig.add_radio_conf(radiocode, device, radiocode_key) 
+          value = "{0}={1}".format(device, value)
       (device, topic) = pconfig.r_radio_vpins.get(radiocode_key)
       logger.info("radio code={0} device ={1} topic {2} value: {3} ".format(radiocode_key, device, topic, value) )
       mqtt.publish_message(topic, value)
@@ -508,6 +542,12 @@ def send_radio_to_topic(arduino_id, mqtt, value, radiocode=None, device=None, de
       logger.error( e )
   return
 
+class Arduidom_bridge():
+  def __init__(self, bridgeID, sbNode, source, messageFunc):
+    self.base_topic ="duitest/"+sbNode+"/" ##
+    ##mqtt_bridge("abridgeID", "abridge", "arduino", on_arduino_message )
+    self.pub_topic = self.base_topic+"to"+source
+    self.sub_topic = self.base_topic+"from"+source
 
 
 '''-------------------------------
@@ -518,7 +558,6 @@ def main(argv=None):
   myrootpath = os.path.dirname(os.path.realpath(__file__)) + "/"
   print ( "START DEAMON " )
   (options, args) = cli_parser(argv)
-  ##print(options)
   write_pid(options.pid_path)
   LOG_FILENAME = myrootpath + '../../../../log/duibridge_daemon'
   formatter = logging.Formatter('%(threadName)s-%(asctime)s| %(levelname)s | %(lineno)d | %(message)s')
@@ -554,13 +593,21 @@ def main(argv=None):
 
   mqttc1 = MQTT_Client()
   mqttc1.run(arduino_id, "localhost", options.to_arduino_queues[arduino_id])
-  aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, options.from_arduino_queues[arduino_id], mqttc1)
+  
+  if options.pin_config[arduino_id].port == "bridge":
+    arduidom_mqtt = MQTT_Arduidom()
+    arduidom_queue = Queue()
+    arduidom_mqtt.run(arduino_id, "localhost", arduidom_queue)
+    aNode = Arduino_Arduidom(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, options.from_arduino_queues[arduino_id], mqttc1, arduidom_queue)
+  else:
+    aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, options.from_arduino_queues[arduino_id], mqttc1)
   options.nodes.update({arduino_id:aNode})
   cp_cmd =options.pin_config[arduino_id].get_pin_conf_cmd()
   request = Arduino_Request(cp_cmd, "CP_OK")
   options.to_arduino_queues[arduino_id].put(request)
   ## subscribe to digital topics if any
-  print("----\n\n")
+
+
   pin_list = options.pin_config[arduino_id].all_pins.values()
   for pin in pin_list:
     ##(mode, topic) = m_t
@@ -604,7 +651,6 @@ def cli_parser(argv=None):
   parser.add_option("-c", "--config_pins_path", dest="config_pins_path", default=".", type="string", help="config pin file path")
   parser.add_option("-p", "--config_ports_path", dest="config_ports_path", default=".", type="string", help="config ports file path")
   parser.add_option("-i", "--pid", dest="pid_path", default="./duibridge.pid", type="string", help="pid file path")
-
   return parser.parse_args(argv)
 
 if __name__ == '__main__':
