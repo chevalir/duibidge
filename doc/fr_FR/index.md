@@ -1,25 +1,24 @@
-== Template
 
-=== Description
+Description
+===========
+
 Plugin servant de base pour les plugins.
 Attention lors de l'utilisation à bien remplacer tous les templates par l'id de votre plugin.
 
-'''
-=== Création plugin partie 1 : l'arborescence
-include::partie_1.asciidoc[]
+Introduction
+============
 
-'''
-=== Création plugin partie 2 : plugin info
-include::partie_2.asciidoc[]
 
-'''
-=== Création plugin partie 3 : dossier desktop
-include::partie_3.asciidoc[]
+Configuration du plugin
+=======================
 
-'''
-=== Création plugin partie 4 : dossier core
-include::partie_4.asciidoc[]
+Dépendances
+-----------
 
-'''
-=== FAQ
-include::faq.asciidoc[]
+> **Tip**
+>
+> La mise à jour des dépendances peut prendre plus de 10 minutes selon
+> votre matériel. La progression est affichée en temps réel.
+
+Démon
+-----
