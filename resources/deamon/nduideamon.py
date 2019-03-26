@@ -186,25 +186,27 @@ class Arduino_Node(object):
         self.SerialPort.write('\n') 
     logger.debug( "write_serial end")
 
-class Arduino_Arduidom(Arduino_Node):
-  def __init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt, arduidom_queue):
-    self.arduidom_queue = arduidom_queue
+class Arduidom_node(Arduino_Node):
+  def __init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt, arduidom_in_queue, arduidom_mqtt):
+    self.arduidom_in_queue = arduidom_in_queue
+    self.arduidom_mqtt = arduidom_mqtt
     Arduino_Node.__init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt)
 
   def init_serial_com(self):
     self.SerialPort = None
-    logger.debug( "Arduino_Arduidom write_serial end")
+    logger.debug( "Arduidom_node write_serial end")
     return None
   
   def write_serial(self, cmd):
-    logger.debug( "Arduino_Arduidom write_serial end")
+    logger.debug( "Arduidom_node write_serial end:"+cmd)
+    self.arduidom_mqtt.publish_to_arduidom(cmd)
     return None
   
   def read_serial(self):
-    ##logger.debug( "Arduino_Arduidom write_serial end")
+    ##logger.debug( "Arduidom_node write_serial end")
     line =""
-    if not self.arduidom_queue.empty():
-      line = self.arduidom_queue.get(False)
+    if not self.arduidom_in_queue.empty():
+      line = self.arduidom_in_queue.get(False)
     return line
 
 
@@ -264,7 +266,7 @@ class MQTT_Client(paho.Client):
 
   def on_message(self, mqttc, obj, msg):
     #logger.debug("on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
-    self.queue.put(build_command(self.arduino_id, msg.topic, msg.payload ))
+    self.queue_out.put(build_command(self.arduino_id, msg.topic, msg.payload ))
 
   def on_publish(self, mqttc, obj, mid):
     ##print("on_publish mid: "+str(obj))
@@ -286,10 +288,10 @@ class MQTT_Client(paho.Client):
       self.subscribe(topic,0)
       ##logger.debug("MQTT_Client::subscribe_topic :"+str(topic))
 
-  def run(self, arduino_id, broker, qq):
+  def run(self, arduino_id, broker, queue_out):
     self.arduino_id = arduino_id
     self.disable_logger()
-    self.queue = qq
+    self.queue_out = queue_out
     self.connect(broker, 1883, 60)
     rc = 0
     while rc == 0:
@@ -299,7 +301,15 @@ class MQTT_Client(paho.Client):
 class MQTT_Arduidom(MQTT_Client):
   def on_message(self, mqttc, obj, msg):
     logger.debug("MQTT_Arduidom::on_message topic:{} Qos:{} msg:{}".format( msg.topic, msg.qos, msg.payload))
-    self.queue.put(msg.payload)
+    self.queue_out.put(msg.payload)
+  
+  def set_topic(self, to_arduidom, from_arduidom):
+    self.to_arduidom = to_arduidom
+    self.subscribe(from_arduidom)
+  
+  def publish_to_arduidom(self, msg):
+    self.publish_message(self.to_arduidom, msg)
+
 
 
 ''' -----------------------------------------
@@ -604,9 +614,9 @@ def main(argv=None):
     arduidom_queue = Queue()
     arduidom_mqtt.run(arduino_id, "localhost", arduidom_queue)
 
-    aNode = Arduino_Arduidom(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, 
-      options.from_arduino_queues[arduino_id], mqttc1, arduidom_queue)
-    arduidom_mqtt.subscribe("duitest/abridge/fromarduino")
+    aNode = Arduidom_node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, 
+      options.from_arduino_queues[arduino_id], mqttc1, arduidom_queue, arduidom_mqtt)
+    arduidom_mqtt.set_topic("duitest/abridge/toarduino", "duitest/abridge/fromarduino")
     cp_cmd=None
   else:
     aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], 
