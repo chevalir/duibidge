@@ -187,20 +187,25 @@ class Arduino_Node(object):
     logger.debug( "write_serial end")
 
 class Arduino_Arduidom(Arduino_Node):
-  def __init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt, arduidom_mqtt=None):
+  def __init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt, arduidom_queue):
+    self.arduidom_queue = arduidom_queue
     Arduino_Node.__init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt)
 
   def init_serial_com(self):
+    self.SerialPort = None
     logger.debug( "Arduino_Arduidom write_serial end")
-    pass
+    return None
   
   def write_serial(self, cmd):
     logger.debug( "Arduino_Arduidom write_serial end")
-    pass
+    return None
   
   def read_serial(self):
-    logger.debug( "Arduino_Arduidom write_serial end")
-    pass
+    ##logger.debug( "Arduino_Arduidom write_serial end")
+    line =""
+    if not self.arduidom_queue.empty():
+      line = self.arduidom_queue.get(False)
+    return line
 
 
 
@@ -598,13 +603,20 @@ def main(argv=None):
     arduidom_mqtt = MQTT_Arduidom()
     arduidom_queue = Queue()
     arduidom_mqtt.run(arduino_id, "localhost", arduidom_queue)
-    aNode = Arduino_Arduidom(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, options.from_arduino_queues[arduino_id], mqttc1, arduidom_queue)
+
+    aNode = Arduino_Arduidom(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, 
+      options.from_arduino_queues[arduino_id], mqttc1, arduidom_queue)
+    arduidom_mqtt.subscribe("duitest/abridge/fromarduino")
+    cp_cmd=None
   else:
-    aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, options.from_arduino_queues[arduino_id], mqttc1)
+    aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], 
+      arduino_id, options.from_arduino_queues[arduino_id], mqttc1)
+    cp_cmd =options.pin_config[arduino_id].get_pin_conf_cmd()
+
   options.nodes.update({arduino_id:aNode})
-  cp_cmd =options.pin_config[arduino_id].get_pin_conf_cmd()
-  request = Arduino_Request(cp_cmd, "CP_OK")
-  options.to_arduino_queues[arduino_id].put(request)
+  if not cp_cmd == None:
+    request = Arduino_Request(cp_cmd, "CP_OK")
+    options.to_arduino_queues[arduino_id].put(request)
   ## subscribe to digital topics if any
 
 
