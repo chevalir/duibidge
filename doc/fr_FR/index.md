@@ -3,6 +3,7 @@ Description
 ===========
 Ce plugins permet de réaliser un pont entre Jeedom et un Arduino connecté en serie (USB). La communication vers Jeedom est réalisé via [MQTT](https://mqtt.org/). Ce plugins nécessite donc l'utilisation d'un plugins MQTT pour Jeedom. Plusieurs plugins gratuits sont disponible sur le [market](https://www.jeedom.com/market/index.php?v=d&p=market&type=plugin&&name=mqtt)
 
+
 Introduction
 ============
 
@@ -12,11 +13,10 @@ Configuration du plugin
 Après le téléchargement du plugin, il vous suffit de l’activer et de le
 configurer.
 
-![configuration01](../images/configuration01.png)
+![configuration-deamon](../images/configuration-deamon.png)
 
 Une fois activé, le démon devrait se lancer. Le plugin est préconfiguré
-avec des valeurs par défaut. Vous aurez plusieurs chose à configurer:
-
+avec des valeurs par défaut. Vous aurez plusieurs chose à changer:
 * definir le nombre d'arduinos connectés
 * pour chaque arduino definir le port USB utilisé
 * pour chaque arduino la configuration des pins, c'est la partie la plus longue mais la plus importante.
@@ -60,7 +60,8 @@ Log
 Cette partie permet de choisir le niveau de log ainsi que d’en consulter
 le contenu.
 
-![configuration05](../images/configuration05.png)
+[configuration05](../images/configuration05.png)
+
 
 Sélectionner le niveau puis sauvegarder, le démon sera alors relancé
 avec les instructions et traces sélectionnées.
@@ -82,7 +83,8 @@ Configuration
 -------------
 
 Cette partie permet de configurer les paramètres généraux du plugin
-![configuration06](../images/configuration06.png)
+
+![configuration-deamon](../images/configuration-deamon.png)
 
 **Général** :
 
