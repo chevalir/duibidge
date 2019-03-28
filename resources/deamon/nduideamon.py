@@ -199,6 +199,8 @@ class Arduidom_node(Arduino_Node):
   
   def write_serial(self, cmd):
     logger.debug( "Arduidom_node write_serial end:"+cmd)
+    ''' in bridge mode the delay is longer than in direct mode so the timeout delay is increased ''' 
+    self.current_request.timeout = self.current_request.timeout * 3 
     self.arduidom_mqtt.publish_to_arduidom(cmd)
     return None
   
