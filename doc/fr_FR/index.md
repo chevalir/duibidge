@@ -88,10 +88,24 @@ Cette partie permet de configurer les paramètres généraux du plugin
 
 **Général** :
 
-    * Le paramètre  **Nombre d'arduinos connectés** vous permet d'indiqué au demon le nombre d'arduino qu'il devra gérer
-    * Les onglets **"Arduino A1"** à **"Arduino A8"** apparaissent en fonction nombre d'arduino indiqué dans le paramètre  précedent.
-    * Les paramètre  **Port de l'Arduino A1** sont accéssible dans l'onglet correspondant, il permet d'indiqué le port USB utilisé pour connecter l'arduino. 
-        * une valeur particulier est disponible pour indiqué que l'arduino est connecté via Arduidom **Bridge Arduidom**.
+   * Le paramètre  **Nombre d'arduinos connectés** vous permet d'indiqué au demon le nombre d'arduino qu'il devra gérer
+   * Les onglets **"Arduino A1"** à **"Arduino A8"** apparaissent en fonction nombre d'arduino indiqué dans le paramètre  précedent.
+   * Les paramètre  **Port de l'Arduino A1** sont accéssible dans l'onglet correspondant, il permet d'indiqué le port USB utilisé pour connecter l'arduino. 
+       * une valeur particulier est disponible pour indiqué que l'arduino est connecté via Arduidom **Bridge Arduidom**.
 
 > **Important**
-> le mode **"Bridge Arduidom"** ne marche qu'avec le premier arduino **"Arduino A1"**
+> le mode **"Bridge Arduidom"** ne marche qu'avec le premier arduino **"Arduino A1"** voir chapitre **Mode Bridge Arduidom**
+
+Gestion des équipements
+=======================
+Il n'y pas d'équiepement dans ce plugins. Le plugins à pour objectif de faire l'interface entre un arduino serie ( USB ) et MQTT. La configuration des equipement ce fait dans un des plugins MQTT disponible sous jeedom.
+
+Configuration des pins des arduinos
+-----------------------------------
+
+
+
+
+
+Exemple d'utilation avec jMQTT
+------------------------------
