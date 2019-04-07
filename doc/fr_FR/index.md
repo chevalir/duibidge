@@ -95,10 +95,10 @@ Cette partie permet de configurer les paramètres généraux du plugin
 
 Gestion des équipements
 =======================
-Il n'y pas d'équipement dans ce plugins. Le plugins a pour objectif de faire l'interface entre un Arduino série (USB) et le protocole MQTT. La configuration des équipements ce fait dans l’un des plugins MQTT disponible sous Jeedom.
+Il n'y pas d'équipement dans ce plugins. Le plugins a pour objectif de faire l'interface entre un Arduino série (USB) et le protocole MQTT. Les equipements ce fait dans l’un des plugins MQTT disponible sous Jeedom. Tous les tests sont actuelement réaliser avec le pluins jMQTT mais les autres plugins MQTT sont utilisables.
 
 Configuration des pins des Arduinos
------------------------------------
+===================================
 
 C'est la partie la plus importante et la plus compliquée.
 C'est à partir de cette configuration que le demon Duibridge fera le lien entre un **"topic MQTT"** et une **"pin"** de l'un des Arduinos.
@@ -123,7 +123,7 @@ Donc cela donne (tuojours pas bon ):
 si vous vouler vous abonner a tous les topics de status vous ne pouvez pas utliser les carateres générique proposer par MQTT. Si vous vous abonner à 
 maison/salon/# par exemple vous serez abonné aussi au topic action.
 
-la bonne solution est de séparer les topics action et status comme ceci:
+**la bonne solution** est de séparer les topics ***action*** et ***status*** comme ceci:
 | Pin N° | Pin Type  | Topic |
 |---|-------------:|---------:|
 | 4 | Digital OUT | maison/status/salon/lampe1 |
@@ -131,20 +131,90 @@ la bonne solution est de séparer les topics action et status comme ceci:
 | 6 | Digital OUT | maison/status/salon/lampe2 |
 | 7 | Digital IN | maison/action/salon/lampe2 |
 
-De cette facon vous pouvez vous abonner à tous les topics status :
-maison/status/#
+De cette facon vous pouvez vous abonner à tous les topics status du piéce ou d'un équiment comme ceci:
+
+    maison/status/#
 ou à tous les status des equipements du salon :
-maison/action/#
 
+    maison/action/#
+>Note: avec jMQTT les commandes de type info (status) seront seront créées automatiquement à la premiere arrivée d'information.
 
+L'écran de configuration de pins
+--------------------------------
+![configuration-deamon](../images/Pin-config-overview.png)
 
+L'écran est composé de 6 zones:
 
+**(Z1)** Boutons actions globales: 
+
+- *[View Json]* permet d'avoir une vu du fichier JsOn de la configuration, pas très utile en fait.
+- **[Save Config]** très important la configuration n'est pas sauvegardée si vous fermez la fenêtre avant d'avoir sauvegarger avec ce bouton.
+- *[Load Confif]* normalement la configuration est charger des que vous ouvrez cette fenêtre mais au cas  
+- [+ Configuration] permet de créer une configuration pour nouvelle carte.
+- [X Last Configuration] supprime la dernière configuration de la liste 
+
+**(Z2)** Permet de saisir les informations globales d’une carte arduino: 
+- **Identifier** l'identifiant de l'arduino ici A1, correspond a l'identifier de l'arduino défini dans la configuration du plugins qui permet de définir le port USB correspondant.
+- **Node, name** : permet de donner un nom a la configuration mais surtout de définir la racine de tous les topics qui seront associés à chaque pin.
+- **Card model** : permet d’indiqué le model de la carte Ardiono, utile pour que le plugins en déduise le nombre de pin. 
+
+**(Z3-Z6)** ces 4 zones permetent de definir la configutaion pour chaque type de Pin. D'abord le *Digital pins* puis les *Analog pins* les *Custom pins* et enfin la configuration radio. 
+
+Tableau de configuration pins
+-----------------------------
+Dans chaque zone vous pouvez **ajouter / supprimer** des lignes qui vont correspondre aux pins que vous voulez configurer ou supprimer:
+
+![configuration-deamon](../images/row-management.png)
+- **[ + row ] [ X Last row ] [ X All ]** permet d'ajouter une ligne, donc la configuration pour une pin, supprimer la derniere ligne ou supprimer toutes les lignes.
+
+Configuration d'une pin Digital
+-------------------------------
+![configuration-deamon](../images/config-pin-digital.png)
+- Le premier champs est le type de pin, toutes les types disponibles dans *Arduidom* sont aussi disponibles ici.
+- **|add prefix|** *action/status* : permet au plugins de prefixer le topic avec *action* ou *status* en fonction du type *in* ou **out** de la pin.
+- **|nom du topic|** nom du topic associé à la pin.
+
+Attention le nom complet du topic sera composé du nom de la carte, saisie dans le champ **Node name**, de *action* ou *status* si **add prefix** est coché et enfin de la valeur du champ **nom du topic** donc {Node name}/{action/status/ ou rien}/{nom du topic}. 
+
+Dans l'example cela donne : 
+- Pin 2 = **cabra/arduino1**/*status*/**bain/vmc**
+- Pin 4 = **cabra/arduino1**/*action*/**bain/vmc**
+
+Configuration d'une pin Digital
+-------------------------------
+
+Identique aux chapitre pins Digital sauf que le type est limité a **entrée analogique**. 
 
 
 
 
 Exemple d'utilation avec jMQTT
 ------------------------------
+Dans cette example j'ai une *lampe de bureau de mon salon* est pilotée par la **pin 4** de l'**arduino N°1**   
+Premiere étape cond-figuration des pin dans Duibridge. Pour cela aller sur le plugins **duibridge** et cliquer sur **Config des Pins**
+
+![configuration-deamon](../images/config-pin-1.png)
+la fenétre de configuration s'ouvre et la derniére configurarion est chargée (normalement :)) mais je vous recommande d'utliser le bouton   
+![configuration-deamon](../images/load-configuration.png)
+
+Si cela n'est pas encore fait vous avez à definir la configuration du 1er arduino de votre installation.
+l'identifiant sera A1 ( valeurs possible de A1 à A2 ) attenfiant correpond a l'identifaiant utlisé dans la configuration du plugin ou vous avez definir le port serie (USB) utlisé pour connecter l'arduino.
+
+![configuration-deamon](../images/config-pin-3-2.png)
+
+(1) **Identifier** l'identifant de l'arduino ici A1
+
+(2) **Node name** le nom qui est aussi utilisé comme racite de tous les topics MQTT ici j'ai defini *cabra/arduino1*, cabra qui est le no de ma maison et arduino1 pour le 1er arduino de mon instalation
+
+(3) **Card model**: model de l'arduino utliser pour definir le nombre de pin disponible. 
+
+
+Ensuite vous avez a configurer les deux pins utisées pour le pilotage de la lampe. La Pin 5 dans l'exmaple en sotie Digital pilote le relais la pin 4 sert de retour pour indiquer l'etat de la lampe.
+
+![configuration-deamon](../images/config-pin-3-3.png)
+
+(1) choix de la pin 
+
 
 Mode bridge Arduidom, migration Arduidom vers MQTT
 --------------------------------------------------
