@@ -105,31 +105,34 @@ C'est à partir de cette configuration que le demon Duibridge fera le lien entre
 Pour simplifier l'utlisation des topic MQTT il est recommander de bien séparer le topics de commande des topics de status ( retours ). Par example si vous avez une lampe pilotée via une pin et qui remonte son status sur une autre pin de l'Arduino. Dans Jeedom il faut deux commandes de type Action et une commande de type Info. Sur l'arduino il faudra deux pins, une **Digital out** pour piloté la lampe, une en **Digital In** pour remonté son status. Il faudra egalement deux topics un pour la pin qui pilote la lampe un pour remonté le status à Jeedom. L'un des avantage de MQTT est de pouvoir s'abonner facilement à une liste de topic et de sous topic.
 
 Donc cela donne (mauvais choix):
-| Pin N° | Pin Type  | Topic |
-|---|:-------------:|---------:|
-| 4 | Digital OUT | maison/salon/lampe/status |
-| 5 | Digital IN | maison/salon/lampe/action |
+
+Pin N° | Pin Type  | Topic 
+---:|:-------------|---------
+4 | Digital OUT | maison/salon/lampe/status 
+5 | Digital IN | maison/salon/lampe/action 
 
 c'est configuartion fonctionne mais cela n'est tres pratique si vous avez deux lampes dans votre salon. cela donnerai :
 
 Donc cela donne (tuojours pas bon ):
-| Pin N° | Pin Type  | Topic |
-|---|:-------------:|---------:|
-| 4 | Digital OUT | maison/salon/lampe1/status |
-| 5 | Digital IN | maison/salon/lampe1/action |
-| 6 | Digital OUT | maison/salon/lampe2/status |
-| 7 | Digital IN | maison/salon/lampe2/action |
+
+Pin N° | Pin Type  | Topic |
+---:|:-------------|:---------
+4 | Digital OUT | maison/salon/lampe1/status
+5 | Digital IN | maison/salon/lampe1/action
+6 | Digital OUT | maison/salon/lampe2/status
+7 | Digital IN | maison/salon/lampe2/action
 
 si vous vouler vous abonner a tous les topics de status vous ne pouvez pas utliser les carateres générique proposer par MQTT. Si vous vous abonner à 
 maison/salon/# par exemple vous serez abonné aussi au topic action.
 
 **la bonne solution** est de séparer les topics ***action*** et ***status*** comme ceci:
-| Pin N° | Pin Type  | Topic |
-|---|-------------:|---------:|
-| 4 | Digital OUT | maison/status/salon/lampe1 |
-| 5 | Digital IN | maison/action/salon/lampe1 |
-| 6 | Digital OUT | maison/status/salon/lampe2 |
-| 7 | Digital IN | maison/action/salon/lampe2 |
+
+Pin N° | Pin Type  | Topic 
+---:|:-------------|:---------
+4 | Digital OUT | maison/status/salon/lampe1
+5 | Digital IN | maison/action/salon/lampe1
+6 | Digital OUT | maison/status/salon/lampe2
+7 | Digital IN | maison/action/salon/lampe2
 
 De cette facon vous pouvez vous abonner à tous les topics status du piéce ou d'un équiment comme ceci:
 
