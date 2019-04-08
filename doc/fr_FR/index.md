@@ -135,11 +135,11 @@ Pin N° | Pin Type  | Topic
 7 | Digital IN | maison/action/salon/lampe2
 
 De cette facon vous pouvez vous abonner à tous les topics status du piéce ou d'un équiment comme ceci:
-
-    maison/status/#
+'''    maison/status/#
+'''
 ou à tous les status des equipements du salon :
-
-    maison/action/#
+'''    maison/action/#
+'''
 >Note: avec jMQTT les commandes de type info (status) seront seront créées automatiquement à la premiere arrivée d'information.
 
 L'écran de configuration de pins
