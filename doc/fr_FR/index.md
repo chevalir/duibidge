@@ -105,10 +105,11 @@ C'est à partir de cette configuration que le demon Duibridge fera le lien entre
 Pour simplifier l'utlisation des topic MQTT il est recommander de bien séparer le topics de commande des topics de status ( retours ). Par example si vous avez une lampe pilotée via une pin et qui remonte son status sur une autre pin de l'Arduino. Dans Jeedom il faut deux commandes de type Action et une commande de type Info. Sur l'arduino il faudra deux pins, une **Digital out** pour piloté la lampe, une en **Digital In** pour remonté son status. Il faudra egalement deux topics un pour la pin qui pilote la lampe un pour remonté le status à Jeedom. L'un des avantage de MQTT est de pouvoir s'abonner facilement à une liste de topic et de sous topic.
 
 Donc cela donne (mauvais choix):
-| Pin N° | Pin Type  | Topic |
-|---|:-------------:|---------:|
-| 4 | Digital OUT | maison/salon/lampe/status |
-| 5 | Digital IN | maison/salon/lampe/action |
+
+Pin N° | Pin Type  | Topic 
+---|:-------------:|---------:
+4 | Digital OUT | maison/salon/lampe/status
+5 | Digital IN | maison/salon/lampe/action
 
 c'est configuartion fonctionne mais cela n'est tres pratique si vous avez deux lampes dans votre salon. cela donnerai :
 
