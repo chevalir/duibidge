@@ -95,7 +95,7 @@ Cette partie permet de configurer les paramètres généraux du plugin
 
 Gestion des équipements
 =======================
-Il n'y pas d'équipement dans ce plugins. Le plugins a pour objectif de faire l'interface entre un Arduino série (USB) et le protocole MQTT. Les equipements ce fait dans l’un des plugins MQTT disponible sous Jeedom. Tous les tests sont actuelement réaliser avec le pluins jMQTT mais les autres plugins MQTT sont utilisables.
+Il n'y pas d'équipement dans ce plugins. Le plugins a pour objectif de faire l'interface entre un Arduino série (USB) et le protocole MQTT. Les equipements peuvent etre créés via l'un des plugins MQTT disponible sous Jeedom. Tous les tests sont actuelement réalisés avec le plugins *jMQTT* mais les autres plugins MQTT sont utilisables.
 
 Configuration des pins des Arduinos
 ===================================
@@ -165,7 +165,7 @@ Tableau de configuration pins
 Dans chaque zone vous pouvez **ajouter / supprimer** des lignes qui vont correspondre aux pins que vous voulez configurer ou supprimer:
 
 ![configuration-deamon](../images/row-management.png)
-- **[ + row ] [ X Last row ] [ X All ]** permet d'ajouter une ligne, donc la configuration pour une pin, supprimer la derniere ligne ou supprimer toutes les lignes.
+- **[ :heavy_plus_sign: row ] [ :heavy_multiplication_x: Last row ] [ :heavy_multiplication_x: All ]** ajouter une ligne (configuration pour une pin) / supprimer la dernière ligne / supprimer toutes les lignes.
 
 Configuration d'une pin Digital
 -------------------------------
@@ -174,7 +174,7 @@ Configuration d'une pin Digital
 - **|add prefix|** *action/status* : permet au plugins de prefixer le topic avec *action* ou *status* en fonction du type *in* ou **out** de la pin.
 - **|nom du topic|** nom du topic associé à la pin.
 
-Attention le nom complet du topic sera composé du nom de la carte, saisie dans le champ **Node name**, de *action* ou *status* si **add prefix** est coché et enfin de la valeur du champ **nom du topic** donc {Node name}/{action/status/ ou rien}/{nom du topic}. 
+Attention le nom complet du topic sera composé du nom de la carte (saisie dans le champ **Node name**), de *action* ou *status* (si **add prefix** est coché) et enfin de la valeur du champ **nom du topic** donc {Node name}/{action/status/ ou rien}/{nom du topic}. 
 
 Dans l'example cela donne : 
 - Pin 2 = **cabra/arduino1**/*status*/**bain/vmc**
@@ -184,7 +184,7 @@ Configuration d'une pin Digital
 -------------------------------
 
 Identique aux chapitre pins Digital sauf que le type est limité a **entrée analogique**. 
-
+ 
 
 
 
