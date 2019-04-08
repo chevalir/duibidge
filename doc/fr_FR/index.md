@@ -113,9 +113,9 @@ Pin N° | Pin Type  | Topic
 
 c'est configuartion fonctionne mais cela n'est tres pratique si vous avez deux lampes dans votre salon. cela donnerai :
 
-Donc cela donne (tuojours pas bon ):
+Donc cela donne (toujours pas bon ):
 
-Pin N° | Pin Type  | Topic |
+Pin N° | Pin Type  | Topic
 ---:|:-------------|:---------
 4 | Digital OUT | maison/salon/lampe1/status
 5 | Digital IN | maison/salon/lampe1/action
