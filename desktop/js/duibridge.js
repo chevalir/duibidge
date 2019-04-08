@@ -16,14 +16,14 @@
  */
 
 
-$("#table_cmd").sortable({axis: "y", cursor: "move", items: ".cmd", placeholder: "ui-state-highlight", tolerance: "intersect", forcePlaceholderSize: true});
+$("#table_cmd").sortable({ axis: "y", cursor: "move", items: ".cmd", placeholder: "ui-state-highlight", tolerance: "intersect", forcePlaceholderSize: true });
 /*
  * Fonction pour l'ajout de commande, appellé automatiquement par plugin.duibridge
  */
 
-$(function() {
-    $('#bt_configurePin').on('click', function() { // Bouton sur la gauche
-        $('#md_modal2').dialog({title: "{{Configuration des pins}}"});
+$(function () {
+    $('#bt_configurePin').on('click', function () { // Bouton sur la gauche
+        $('#md_modal2').dialog({ title: "{{Configuration des pins}}" });
         $('#md_modal2').load('index.php?v=d&plugin=duibridge&modal=pin.config').dialog('open');
     });
 });
@@ -36,7 +36,7 @@ function getPinMapping() {
 
 function addCmdToTable(_cmd) {
     if (!isset(_cmd)) {
-        var _cmd = {configuration: {}};
+        var _cmd = { configuration: {} };
     }
     if (!isset(_cmd.configuration)) {
         _cmd.configuration = {};

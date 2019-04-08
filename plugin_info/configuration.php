@@ -55,72 +55,78 @@ $ArduinoQty = config::byKey('ArduinoQty', 'duibridge', 1);
 
 <div class="tab-content" id="arduinotabs">
     <?php for ($i=1; $i <= 8; $i++) { ?>
-        <div class="tab-pane<?php if ($i == 1) echo " active" ?>" id="tab_<?php echo $i ?>">
-            <hr>
-            <form class="form-horizontal">
-                <fieldset>
-                    <div class="form-group">
-                        <label class="col-lg-3 control-label">Port de l'Arduino A<?php echo $i ?></label>
-                        <div class="col-lg-9">
-                            <select class="configKey form-control" data-l1key="A<?php echo $i ?>_port">
-                                <option value="none">{{NULL}}</option>
-                                <option value="bridge">{{Arduidom bridge}}</option>
-                                <?php
+    <div class="tab-pane<?php if ($i == 1) echo " active" ?>" id="tab_<?php echo $i ?>">
+        <hr>
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="form-group">
+                    <label class="col-lg-3 control-label">Port de l'Arduino A<?php echo $i ?></label>
+                    <div class="col-lg-9">
+                        <select class="configKey form-control" data-l1key="A<?php echo $i ?>_port">
+                            <option value="none">{{NULL}}</option>
+                            <option value="bridge">{{Arduidom bridge}}</option>
+                            <?php
                                             foreach (jeedom::getUsbMapping('', true) as $name => $value) {
                                             echo '<option value="' . $name . '">' . $name . ' (' . $value . ')</option>';
                                             }
                                 ?>
-                            </select>
-                        </div>
+                        </select>
                     </div>
-                </fieldset>
-            </form>
-        </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
 
-    <?php } ?>  <!-- FIN DU For PHP -->
+    <?php } ?>
+    <!-- FIN DU For PHP -->
 </div>
 <script>
-    var jsinitok = false;
-    $('#bt_savePluginConfig').on('click', function () {
-        console.log("bt_savePluginConfig");
+var jsinitok = false;
+$('#bt_savePluginConfig').on('click', function() {
+    console.log("bt_savePluginConfig");
 
-        $.ajax({// fonction permettant de faire de l'ajax
-            type: "POST", // methode de transmission des données au fichier php
-            url: "plugins/duibridge/core/ajax/duibridge.ajax.php", // url du fichier php
-            data: {
-                action: "SaveConfToJson"
-            },
-            dataType: 'json',
-            error: function (request, status, error) {
-                handleAjaxError(request, status, error);
-            },
-            success: function (data) { // si l'appel a bien fonctionné
-                if (data.state != 'ok') {
-                    $('#div_alert').showAlert({message: data.result, level: 'danger'});
-                    return;
-                }
-                $('#div_alert').showAlert({message: 'La Migration a été correctement effectuée.', level: 'success'});
+    $.ajax({ // fonction permettant de faire de l'ajax
+        type: "POST", // methode de transmission des données au fichier php
+        url: "plugins/duibridge/core/ajax/duibridge.ajax.php", // url du fichier php
+        data: {
+            action: "SaveConfToJson"
+        },
+        dataType: 'json',
+        error: function(request, status, error) {
+            handleAjaxError(request, status, error);
+        },
+        success: function(data) { // si l'appel a bien fonctionné
+            if (data.state != 'ok') {
+                $('#div_alert').showAlert({
+                    message: data.result,
+                    level: 'danger'
+                });
+                return;
             }
-        });
-
-        //history.go(0);
+            $('#div_alert').showAlert({
+                message: 'La Migration a été correctement effectuée.',
+                level: 'success'
+            });
+        }
     });
 
+    //history.go(0);
+});
 
 
-        $('#Arduinoqty').change(function() {
-            if (jsinitok) {
-                console.log("Qty Changed ! Saving...");
-                document.getElementById("bt_savePluginConfig").click();
-                location.reload();
-                $('#ul_plugin .li_plugin[data-plugin_id=duibridge]').click();
-            }
-        });
 
-    //$(document).ready(function(){
-        setTimeout(function() {
-        jsinitok = true;
-        console.log("initOK");
-    }, 3000);
+$('#Arduinoqty').change(function() {
+    if (jsinitok) {
+        console.log("Qty Changed ! Saving...");
+        document.getElementById("bt_savePluginConfig").click();
+        location.reload();
+        $('#ul_plugin .li_plugin[data-plugin_id=duibridge]').click();
+    }
+});
 
+//$(document).ready(function(){
+setTimeout(function() {
+    jsinitok = true;
+    console.log("initOK");
+}, 3000);
 </script>
