@@ -1,6 +1,5 @@
 {
-  "identifier":"A1",
-  "name": "cabra/arduino1",
+  "nodeName": "cabradom/node1",
   "card": "UNO, duemilanove328, leo, nano168, nano328, mega2560",
   "digitals": {
     "dpins": [
@@ -26,7 +25,7 @@
         "card_pin": "DIGITAL 5 (PWM)",
         "mode": "z; disable",
         "prefix": true,
-        "topic": "rien"
+        "topic": ""
       },
       {
         "card_pin": "DIGITAL 6 (PWM)",
@@ -42,23 +41,23 @@
       },
       {
         "card_pin": "DIGITAL 8 ",
-        "mode": "e; Sortie Digitale en Push down",
+        "mode": "i; Entrée Digitale",
         "prefix": true,
         "topic": "digital/d8"
       },
       {
-        "card_pin": "DIGITAL 12 ",
+        "card_pin": "DIGITAL 13 (LED)",
         "mode": "o; Sortie Digitale",
         "prefix": true,
-        "topic": "salon/lampe"
+        "topic": "digital/d13"
       }
     ]
   },
   "analog": {
     "apins": [
       {
-        "card_pin": "ANALOG 0 (A0)",
-        "mode": "z; disable",
+        "card_pin": "A0; ANALOG IN A0",
+        "mode": "a; Entrée analogique",
         "prefix": true,
         "topic": "ananlog/A0"
       }
@@ -127,7 +126,7 @@
         "topic": "jardin/pression"
       },
       {
-        "custom_pin": 4,
+        "custom_pin": 12,
         "mode": "c; Custom in",
         "prefix": true,
         "topic": "garage/congel/temp"
@@ -155,18 +154,6 @@
         "mode": "c; Custom in",
         "prefix": true,
         "topic": "bain/miroir"
-      },
-      {
-        "custom_pin": 23,
-        "mode": "c; Custom in",
-        "prefix": true,
-        "topic": "garage/chaudiere/bruleur"
-      },
-      {
-        "custom_pin": 31,
-        "mode": "d; Custom out",
-        "prefix": true,
-        "topic": "bain/vmc/time"
       }
     ]
   },
@@ -283,78 +270,6 @@
         "mode": "tr; Trans./Recep.",
         "prefix": true,
         "topic": "salon/living/hifi"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "4988678",
-        "device": 3,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/4988678/3"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "4988678",
-        "device": 4,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/4988678/4"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "7689714",
-        "device": 2,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/7689714/2"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "15435858",
-        "device": 2,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/15435858/2"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "9961472",
-        "device": 9,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/9961472/9"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "9778158",
-        "device": 11,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/9778158/11"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "9961472",
-        "device": 12,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/9961472/12"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "4988678",
-        "device": 1,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/4988678/1"
-      },
-      {
-        "typeradio": "H; Chacon DIO",
-        "radiocode": "4988678",
-        "device": 2,
-        "mode": "tr; Trans./Recep.",
-        "prefix": true,
-        "topic": "radio/4988678/2"
       }
     ]
   }

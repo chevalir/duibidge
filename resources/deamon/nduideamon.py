@@ -133,17 +133,17 @@ class Arduino_Node(object):
 
   def init_serial_com(self):
     self.SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
-    logger.debug("Arduino {} wainting for HELLO".format(self.ID))
+    logger.debug("Arduino {} waiting for HELLO".format(self.ID))
     self.reset_with_DTR()
     line = ""
     checktimer = 0
     while line.find(from_node['init']) < 0:
-      time.sleep(1)
+      time.sleep(2)
       checktimer += 1
       line = self.read_serial()
       line = line.replace('\n', '')
       line = line.replace('\r', '')
-      logger.debug("0_Arduino " + str(self.ID) + " >> [" + line + "]")
+      logger.debug("received from Arduino " + str(self.ID) + " >> [" + line + "]")
       if checktimer in [3,6,9,12]:
         self.reset_with_DTR()
       if checktimer > 15:
@@ -355,7 +355,7 @@ class Pin_Config(object):
     self.DPIN=14  
     self.APIN=6   
     self.CPIN=32  
-    self.pins_decode={}
+    self.pins_decode=None
     ''' use to send CP command to arduino CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc'''
     self.cp_list = []  
     self.port=None
@@ -595,55 +595,61 @@ def main(argv=None):
   ##
   logger.info("# duiBridged - duinode bridge for Jeedom # loglevel="+options.loglevel)
   
-  arduino_id="A1"
   options.pin_config={}
-  options.pin_config.update({arduino_id:Pin_Config(arduino_id, options.config_pins_path, options.config_ports_path)})
-  print(options.pin_config[arduino_id])
-  all_pins_decode = options.pin_config[arduino_id].load_pin_config()
-  options.pin_config[arduino_id].load_port_config()
-  
-  
-  options.nodes={}
-  rootNode = options.pin_config[arduino_id].rootNode ## TODO manage several arduino
-  options.to_arduino_queues={arduino_id:Queue()}
-  options.from_arduino_queues={arduino_id:Queue()}
+  all_pins_decode=None
+  ##arduino_id="A1"
+  for arduino_num in range (2,3):
+    arduino_id = "A"+str(arduino_num)
+    options.pin_config.update({arduino_id:Pin_Config(arduino_id, options.config_pins_path, options.config_ports_path)})
+    print(options.pin_config[arduino_id])
+    pins_decode = options.pin_config[arduino_id].load_pin_config(all_pins_decode)
+    if not pins_decode==None:
+      ''' config found for this Arduino, json array saved for the next round '''
+      all_pins_decode = pins_decode
 
-  mqttc1 = MQTT_Client()
-  mqttc1.run(arduino_id, "localhost", options.to_arduino_queues[arduino_id])
-  
-  if options.pin_config[arduino_id].port == "bridge":
-    arduidom_mqtt = MQTT_Arduidom()
-    arduidom_queue = Queue()
-    arduidom_mqtt.run(arduino_id, "localhost", arduidom_queue)
+      ''' hope that the port is also defined '''
+      options.pin_config[arduino_id].load_port_config() 
+      options.nodes={}
+      ### rootNode = options.pin_config[arduino_id].rootNode ## TODO manage several arduino
+      options.to_arduino_queues={arduino_id:Queue()}
+      options.from_arduino_queues={arduino_id:Queue()}
 
-    aNode = Arduidom_node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, 
-      options.from_arduino_queues[arduino_id], mqttc1, arduidom_queue, arduidom_mqtt)
-    arduidom_mqtt.set_topic("duitest/abridge/toarduino", "duitest/abridge/fromarduino")
-    cp_cmd=None
-  else:
-    aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], 
-      arduino_id, options.from_arduino_queues[arduino_id], mqttc1)
-    cp_cmd =options.pin_config[arduino_id].get_pin_conf_cmd()
+      mqttc1 = MQTT_Client()
+      mqttc1.run(arduino_id, "localhost", options.to_arduino_queues[arduino_id])
+      
+      if options.pin_config[arduino_id].port == "bridge":
+        arduidom_mqtt = MQTT_Arduidom()
+        arduidom_queue = Queue()
+        arduidom_mqtt.run(arduino_id, "localhost", arduidom_queue)
 
-  options.nodes.update({arduino_id:aNode})
-  if not cp_cmd == None:
-    request = Arduino_Request(cp_cmd, "CP_OK")
-    options.to_arduino_queues[arduino_id].put(request)
-  ## subscribe to digital topics if any
+        aNode = Arduidom_node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], arduino_id, 
+          options.from_arduino_queues[arduino_id], mqttc1, arduidom_queue, arduidom_mqtt)
+        arduidom_mqtt.set_topic("duitest/abridge/toarduino", "duitest/abridge/fromarduino")
+        cp_cmd=None
+      else:
+        aNode = Arduino_Node(options.pin_config[arduino_id].port, options.to_arduino_queues[arduino_id], 
+          arduino_id, options.from_arduino_queues[arduino_id], mqttc1)
+        cp_cmd =options.pin_config[arduino_id].get_pin_conf_cmd()
 
+      options.nodes.update({arduino_id:aNode})
+      if not cp_cmd == None:
+        request = Arduino_Request(cp_cmd, "CP_OK")
+        options.to_arduino_queues[arduino_id].put(request)
+      ## subscribe to digital topics if any
 
-  pin_list = options.pin_config[arduino_id].all_pins.values()
-  for pin in pin_list:
-    ##(mode, topic) = m_t
-    if not ( pin.mode in Pin_def.mode_status ):
-      mqttc1.subscribe(pin.topic)
-      ##logger.debug('subscribe :'+pin.topic)
-    ##else:
-      ##logger.debug('not subscribe {} {}:'.format(pin.mode, pin.topic))
-  ''' subscribe to radio topics '''
-  topics = options.pin_config[arduino_id].t_radio_vpins.keys()
-  mqttc1.subscribe_topics(topics)
-
+      pin_list = options.pin_config[arduino_id].all_pins.values()
+      for pin in pin_list:
+        ##(mode, topic) = m_t
+        if not ( pin.mode in Pin_def.mode_status ):
+          mqttc1.subscribe(pin.topic)
+          ##logger.debug('subscribe :'+pin.topic)
+        ##else:
+          ##logger.debug('not subscribe {} {}:'.format(pin.mode, pin.topic))
+      ''' subscribe to radio topics '''
+      topics = options.pin_config[arduino_id].t_radio_vpins.keys()
+      mqttc1.subscribe_topics(topics)
+    else :
+      logger.debug("config not found for "+arduino_id)
 
   while True :
     time.sleep(0.1)
@@ -656,8 +662,6 @@ def main(argv=None):
         logger.debug(str(pin) +" "+ str(value))
         send_to_topic(arduino_id, pin, value, mqttc1)
       options.from_arduino_queues[arduino_id].task_done()
-
-    
   logger.debug("THE END")
 
 
