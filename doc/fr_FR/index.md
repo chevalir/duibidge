@@ -1,3 +1,5 @@
+![configuration-deamon](../images/duibridge_icon.png)
+
 
 Description
 ===========
@@ -174,8 +176,8 @@ Configuration d'une pin Digital
 -------------------------------
 ![configuration-deamon](../images/config-pin-digital.png)
 - Le premier champs est le type de pin, toutes les types disponibles dans *Arduidom* sont aussi disponibles ici.
-- **|add prefix|** *action/status* : permet au plugins de prefixer le topic avec *action* ou *status* en fonction du type *in* ou **out** de la pin.
-- **|nom du topic|** nom du topic associé à la pin.
+- le champ **|add prefix|** *action/status* : permet au plugins de prefixer le topic avec *action* ou *status* en fonction du type *in* ou **out** de la pin.
+- le champ **|nom du topic|** permet de definir le nom du topic associé à la pin. Même régles que pour un topic MQTT
 
 Attention le nom complet du topic sera composé du nom de la carte (saisie dans le champ **Node name**), de *action* ou *status* (si **add prefix** est coché) et enfin de la valeur du champ **nom du topic** donc {Node name}/{action/status/ ou rien}/{nom du topic}. 
 
@@ -183,12 +185,16 @@ Dans l'example cela donne :
 - Pin 2 = **cabra/arduino1**/*status*/**bain/vmc**
 - Pin 4 = **cabra/arduino1**/*action*/**bain/vmc**
 
-Configuration d'une pin Digital
+Configuration d'une pin Analogic
 -------------------------------
 
 Identique aux chapitre pins Digital sauf que le type est limité a **entrée analogique**. 
- 
 
+
+Configuration d'une pin Custom
+-------------------------------
+
+Les custom pin peuvent etre 
 
 
 Exemple d'utilation avec jMQTT
