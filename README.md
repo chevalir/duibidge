@@ -1,4 +1,6 @@
 # duibridge
+
+![configuration-deamon](doc/images/duibridge_icon.png)
 duibidge jeedom plugins
 
 Ce plugins est fait d’abord fait pour ceux qui cherche à remplacer le plugins Arduidom sous Jeedom. Depuis que le plugins Arduidom qui a disparu du market Jeedom je cherche une solution pour le remplacer sans trop casser mon installation.
