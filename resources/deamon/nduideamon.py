@@ -513,7 +513,7 @@ def send_to_topic(arduino_id, pin_num, value, lmqtt):
     if thePin in pconfig.all_pins.keys():
       pin_info = pconfig.all_pins[thePin]
       if pin_info.mode in Pin_def.mode_status :
-        ''' chack if the pin is the Radio receptor'''
+        ''' check if the pin is the Radio receptor'''
         if pin_info.mode in ('r'): 
           send_radio_to_topic(arduino_id, lmqtt, value)
         else:     
