@@ -25,15 +25,15 @@ Pour ceux qui aurons besoin de faire une migration depuis *Arduidom*, un mode mi
 
 > Attension dans ce mode **Bridge** les performanaces sont un peu moins bonnes mais reste tres correctes.
 
+> Pour le mode bridge vous devez patcher le deamon python d'Arduidom aduidomx.py pour cela vous trouverez un shell à la racine du projet: plugins/duibridge/arduidom_deamon_bridge.sh
 
 
-
-Limitation de la version actuelle (testeur vous etes les bien venu):
+Limitation de la version actuelle (testeur vous êtes les bienvenus):
 ====================================================================
  - Testée avec un seul Arduino. 
- - Support uniquement du protocol radio Chacon DIO
- - Support des sonde DHT fonctionel mais pas encore testé 
- - Pas de configuration possible du host et port MQQT ( uniquement via changement dans le deamon en python) 
+ - Support uniquement du protocol radio Chacon ê - Support des sonde DHT fonctionel mais pas encore testé 
+
+ - Pas de configuration possible du host et port MQTT ( uniquement via changement dans le deamon en python) 
  - 
 
 
