@@ -288,7 +288,7 @@ class MQTT_Client(paho.Client):
   def subscribe_topics(self, list_of_topic):
     for topic in list_of_topic:
       self.subscribe(topic,0)
-      ##logger.debug("MQTT_Client::subscribe_topic :"+str(topic))
+      logger.debug("MQTT_Client::subscribe_topic :"+str(topic))
 
   def run(self, arduino_id, broker, queue_out):
     self.arduino_id = arduino_id
@@ -393,6 +393,8 @@ class Pin_Config(object):
       for i in range(len(all_pins_decode)):
         if all_pins_decode[i]['identifier'] == self.id:
           self.pins_decode = all_pins_decode[i]
+    else :
+      self.pins_decode = all_pins_decode
     if not self.pins_decode == None:
       self.rootNode = str(self.pins_decode['name'])
       cardType = self.pins_decode['card']
@@ -573,7 +575,7 @@ class Arduidom_bridge():
 def main(argv=None):
   global stopMe, options
   myrootpath = os.path.dirname(os.path.realpath(__file__)) + "/"
-  print ( "START DEAMON " )
+  print ( "START DEAMON" )
   (options, args) = cli_parser(argv)
   write_pid(options.pid_path)
   LOG_FILENAME = myrootpath + '../../../../log/duibridge_daemon'
@@ -601,7 +603,6 @@ def main(argv=None):
   for arduino_num in range (1,2):
     arduino_id = "A"+str(arduino_num)
     options.pin_config.update({arduino_id:Pin_Config(arduino_id, options.config_pins_path, options.config_ports_path)})
-    print(options.pin_config[arduino_id])
     pins_decode = options.pin_config[arduino_id].load_pin_config(all_pins_decode)
     if not pins_decode==None:
       ''' config found for this Arduino, json array saved for the next round '''
