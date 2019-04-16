@@ -18,8 +18,11 @@
 if (!isConnect('admin')) {
     throw new Exception('{{401 - Accès non autorisé}}');
 }
-
 ?>
+<center><h1>Important : Faire un reload manuel [LOAD CONFIG] à chaque ouverture de cette fenêtre</h1></center>
+<center><h1>Et aussi : Penser à re-démmarer le deamon après avoir sauvegardé votre nouvelle configuration</h1></center>
+
+
 <script src="./plugins/duibridge/pinconf/jsoneditor.js"></script>
     
     <button id='submit'>View JSON</button>

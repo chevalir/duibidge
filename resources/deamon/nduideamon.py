@@ -660,6 +660,8 @@ def main(argv=None):
       if '>>' in mess[:6]:
         (pin, value) = mess.split(">>")
         value = value.replace("<<", '')
+        if value[-3:] == '.00':
+          value = value[:(len(value)-3)]
         logger.debug(str(pin) +" "+ str(value))
         send_to_topic(arduino_id, pin, value, mqttc1)
       options.from_arduino_queues[arduino_id].task_done()
