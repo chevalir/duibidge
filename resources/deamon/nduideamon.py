@@ -17,7 +17,7 @@ import json
 __author__ = 'chevalir'
 logger = logging.getLogger("duibridge")
 options={}
-On_Off = ['Off','On']
+On_Off = ['0','1'] ## value used to transmit radio remote button status 
 from_node = {'init': "HELLO" }
 to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "print_eeprom":"TS"}
 cmd_cp_default = "CPzzrtyiooizzzozzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
@@ -132,8 +132,8 @@ class Arduino_Node(object):
     logger.debug("Arduino_Node::init_arduidom_bridge")
 
   def init_serial_com(self):
-    self.SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
     logger.debug("Arduino {} waiting for HELLO".format(self.ID))
+    self.SerialPort = serial.Serial(self.usb_port, self.baud, timeout=0.3, xonxoff=0, rtscts=0)
     self.reset_with_DTR()
     line = ""
     checktimer = 0
@@ -540,7 +540,7 @@ def send_radio_to_topic(arduino_id, mqtt, value, radiocode=None, device=None, de
         device_on = device > 99
         if device_on :
           device = device - 100
-      value = On_Off[int(device_on)]
+      state = On_Off[int(device_on)]
       ''' search if a topic is define for this device'''
       radiocode_key = '{}#{:0>2}'.format(radiocode, device) 
       if radiocode_key not in pconfig.r_radio_vpins: 
@@ -550,10 +550,10 @@ def send_radio_to_topic(arduino_id, mqtt, value, radiocode=None, device=None, de
           logger.info("radio code={0} device ={1} not define in config ".format(radiocode, device) )
           ''' when the radiocode if not found in the config it is added in config file with default values '''
           pconfig.add_radio_conf(radiocode, device, radiocode_key) 
-          value = "{0}={1}".format(device, value)
+          state = "{0}={1}".format(device, state)
       (device, topic) = pconfig.r_radio_vpins.get(radiocode_key)
-      logger.info("radio code={0} device ={1} topic {2} value: {3} ".format(radiocode_key, device, topic, value) )
-      mqtt.publish_message(topic, value)
+      logger.info("radio code={0} device ={1} topic {2} value: {3} ".format(radiocode_key, device, topic, state) )
+      mqtt.publish_message(topic, state)
     except Exception as e:
       logger.error( "send_radio_to_topic exception" )
       logger.error( e )
@@ -598,7 +598,7 @@ def main(argv=None):
   options.pin_config={}
   all_pins_decode=None
   ##arduino_id="A1"
-  for arduino_num in range (2,3):
+  for arduino_num in range (1,2):
     arduino_id = "A"+str(arduino_num)
     options.pin_config.update({arduino_id:Pin_Config(arduino_id, options.config_pins_path, options.config_ports_path)})
     print(options.pin_config[arduino_id])
