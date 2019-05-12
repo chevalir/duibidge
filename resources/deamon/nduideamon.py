@@ -20,7 +20,6 @@ options={}
 On_Off = ['0','1'] ## value used to transmit radio remote button status 
 from_node = {'init': "HELLO" }
 to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "print_eeprom":"TS"}
-cmd_cp_default = "CPzzrtyiooizzzozzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
 
 ##  DBG_todo:SP130001     SP130001_OK
 ##  DBG_todo:SP130001    'SP130001'   'SP{:02}{:04}'.format(13,1)
