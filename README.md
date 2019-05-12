@@ -23,7 +23,7 @@ Mode bridge
 
 Pour ceux qui aurons besoin de faire une migration depuis *Arduidom*, un mode mixte est possible. Ce mmode permet de garder de plugins *Arduidom* en place mais de pouvoir communiqué en même temps avec l'Arduino via MQTT. Cela permet d'avoir un mode de transition, de créé tous vos equipements via MQTT tout en concervant les equipements Arduidom operationel. Cela peut vuos permetre de faire des tests sans cassé votre installation.
 
-> Attension dans ce mode **Bridge** les performanaces sont un peu moins bonnes mais reste tres correctes.
+> Attension dans ce mode **Bridge** les performanaces sont un peu moins bonnes mais reste trés correctes.
 
 > Pour le mode bridge vous devez patcher le deamon python d'Arduidom aduidomx.py pour cela vous trouverez un shell à la racine du projet: plugins/duibridge/arduidom_deamon_bridge.sh
 
@@ -34,6 +34,14 @@ Limitation de la version actuelle (testeur vous êtes les bienvenus):
  - Support uniquement du protocol radio Chacon ê - Support des sonde DHT fonctionel mais pas encore testé 
 
  - Pas de configuration possible du host et port MQTT ( uniquement via changement dans le deamon en python) 
- - 
+ 
+ Installation
+ ============
+ 
+Pour le moment le plugins n’est pas dispo au format jeedom Market, vous devez l’installer manuellement.
+Pour l’installation manuel vous devez télécharger le zip générer pat github via le bouton "Clone or download"/"Download ZIP". Le ZIP duibridge-master.zip contient un dossier "duibridge-master" qu’il faut renommer en "duibridge" copier dans le dossier de plugins de Jeedom /var/www/html/plugins. POur que le nouveau plugins soit visible et fonctionnel dans jeedom il faut changer le propriétaire et group avec la commande 
+> sudo chown -R www-data:www-data /var/www/html/plugins/duibrige
+ 
+
 
 

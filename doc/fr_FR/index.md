@@ -225,7 +225,27 @@ Ensuite vous avez a configurer les deux pins utisées pour le pilotage de la lam
 (1) choix de la pin 
 
 
-Mode bridge Arduidom, migration Arduidom vers MQTT
+Mode bridge Arduidom, migration Arduidom vers Duibridge/MQTT
 --------------------------------------------------
 
+Le mode "bridge" permet de tester Duibridge tout en gardant Arduidom en place. En mode bridge le deamon D'Arduidom est légèrement modifié pour communiquer avec le deamon de Duibrige. Cette communication entre les deux deamon permets d'envoyer ou de recevoir des informations de l'Arduino soit depuis les équipements Arduidom dans Jeedom soit en MQTT via Duibridge.
+
+Vu de Jeedomo il n’y a pas de différence entre le mode bridge et le mode direct. Cela veut dire que toutes la configuration et les équipement que vous allez créer en mode bridge continuerons de fonctionner en mode direct.
+
+Attention au niveau performance mode bridge peut être un peu plus lent que le mode direct.
+
+Pour le mode bridge vous devez installer le plugins Duibridge normamlement mais aussi un plugins MQTT pour Jeedom, jMQTT conseillé je n’at pas testé avec les autres ( gratuis sur le market Jeedom )
+Pour configurer le mode bridge vous devez d’abord « patcher » le deamon du plugins Arduidom pour cela :
+1 ) Arrêter le deamon Arduidom via la configuration du plugins dans Jeedom
+2 ) Vous connecter en ssh ou autre sur le serveur ou jeedom est installer.
+3 ) Aller dans le dossier des plugins de jeedom ( en général /var/www/html/plugins ) 
+4 ) Aller dans le dossier duibridge et lancer arduidom_deamon_bridge.sh
+Ce scripte remplace le deamon de Arduidom ( l’original est renommé arduidomx.py.original dans le dossier du plugins Arduidom)
+5) Vous pouvez redémarrer Arduidom
+
+Ensuite vous pouvez configurer Duibrige pour définir:
+Nombre d'arduino utilisé : 1 
+Port de l’Arduino A1 : **Arduidom bridge**. 
+Ensuite vous pouvez configurer les pins du l’Arduino A1 comme en mode normale.
+Apres la configuration des pins bien pensez à redémarrer le deamon de Duibridge.
 
