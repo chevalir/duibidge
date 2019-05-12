@@ -18,13 +18,14 @@
 if (!isConnect('admin')) {
     throw new Exception('{{401 - Accès non autorisé}}');
 }
-
 ?>
+<center><h2>Important : Faire un reload manuel [LOAD CONFIG] à chaque ouverture de cette fenêtre</h2></center>
+
+
 <script src="./plugins/duibridge/pinconf/jsoneditor.js"></script>
-    
-    <button id='submit'>View JSON</button>
-    <button id='save'>Save Config</button>
-    <button id='restore'>Load Config</button>
+   <button id='restore'>Load Config</button>
+   <button id='submit'>View JSON</button>
+   <button id='save'>Save Config</button>
     <span id='valid_indicator'></span>
     <div id='editor_holder'></div>
 
@@ -143,8 +144,8 @@ if (!isConnect('admin')) {
 
       document.getElementById('save').addEventListener('click',function() {
         console.log(editor.getValue());
-        window.alert('Form submitted. Values object:\n' +
-          JSON.stringify(editor.getValue(), null, 2));
+        //window.alert('Form submitted. Values object:\n' +
+          //JSON.stringify(editor.getValue(), null, 2));
 
         var response=document.getElementById("editor_holder");
         var value = editor.getValue();
@@ -159,8 +160,8 @@ if (!isConnect('admin')) {
               //Must add this request header to XMLHttpRequest request for POST
               xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         xmlhttp.send(data);
+        window.alert("Configuration sauvegardée.\n");
       });
-
 
       
       // Hook up the enable/disable button
