@@ -250,3 +250,7 @@ Ensuite vous pouvez configurer les pins du l’Arduino A1 comme en mode normale.
 Apres la configuration des pins bien pensez à redémarrer le deamon de Duibridge.
 
 
+
+
+
+
