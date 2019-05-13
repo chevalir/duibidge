@@ -1,12 +1,13 @@
 #!/bin/bash
 Backup="../arduidom/ressources/arduidomx.py.original"
 Orginal="../arduidom/ressources/arduidomx.py"
-Bridge="ressources/arduidomx.py.bridge"
+Bridge="resources/bridge/arduidomx.py.bridge"
 if [ -f $Backup ]
 then
-    echo "$Backup found backup to arduidomx.py.original"
+    echo "$Backup found backup, install only"
+    sudo cp $Bridge $Original
 else
 	echo "$file not found backup to arduidomx.py.original"
     sudo cp $Orginal $Backup
- #   sudo cp $Bridge $Original
+    sudo chown www-data:www-data $Backup
 fi

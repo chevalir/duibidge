@@ -20,7 +20,6 @@ options={}
 On_Off = ['0','1'] ## value used to transmit radio remote button status 
 from_node = {'init': "HELLO" }
 to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "print_eeprom":"TS"}
-cmd_cp_default = "CPzzrtyiooizzzozzzzzzzcccccccccccccccccccccccccccccccczzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzcccccccccccccccc"
 
 ##  DBG_todo:SP130001     SP130001_OK
 ##  DBG_todo:SP130001    'SP130001'   'SP{:02}{:04}'.format(13,1)
@@ -186,6 +185,8 @@ class Arduino_Node(object):
         self.SerialPort.write('\n') 
     logger.debug( "write_serial end")
 
+''' -----------------------------------------
+'''
 class Arduidom_node(Arduino_Node):
   def __init__(self, port, in_queue, arduino_id, out_queue, jeedom_mqtt, arduidom_in_queue, arduidom_mqtt):
     self.arduidom_in_queue = arduidom_in_queue
@@ -210,8 +211,6 @@ class Arduidom_node(Arduino_Node):
     if not self.arduidom_in_queue.empty():
       line = self.arduidom_in_queue.get(False)
     return line
-
-
 
 ''' -----------------------------------------
 '''
@@ -257,8 +256,6 @@ class Arduino_Request:
     self.answer = answer
 
 
-
-
 ''' -----------------------------------------
 '''
 class MQTT_Client(paho.Client):
@@ -288,7 +285,7 @@ class MQTT_Client(paho.Client):
   def subscribe_topics(self, list_of_topic):
     for topic in list_of_topic:
       self.subscribe(topic,0)
-      ##logger.debug("MQTT_Client::subscribe_topic :"+str(topic))
+      logger.debug("MQTT_Client::subscribe_topic :"+str(topic))
 
   def run(self, arduino_id, broker, queue_out):
     self.arduino_id = arduino_id
@@ -311,8 +308,6 @@ class MQTT_Arduidom(MQTT_Client):
   
   def publish_to_arduidom(self, msg):
     self.publish_message(self.to_arduidom, msg)
-
-
 
 ''' -----------------------------------------
 '''
@@ -340,6 +335,7 @@ class Pin_Config(object):
     self.id = ID
     self.conf_pins_path=conf_pins_path
     self.conf_ports_path=conf_ports_path
+    self.conf_pins_modif_time=None
     if conf_save_path==None:
       self.conf_save_path=conf_pins_path
     else:
@@ -365,6 +361,7 @@ class Pin_Config(object):
       if ports_decode == None:
         logger.debug(self.conf_ports_path + " to load ")
         '''Get a file object with write permission.'''
+        ## self.conf_pins_modif_time = os.path.getmtime(self.conf_ports_path)
         file_object = open(self.conf_ports_path, 'r')
         logger.debug(self.conf_ports_path + " loaded ") 
         '''Load JSON file data to a python dict object.'''
@@ -393,6 +390,8 @@ class Pin_Config(object):
       for i in range(len(all_pins_decode)):
         if all_pins_decode[i]['identifier'] == self.id:
           self.pins_decode = all_pins_decode[i]
+    else :
+      self.pins_decode = all_pins_decode
     if not self.pins_decode == None:
       self.rootNode = str(self.pins_decode['name'])
       cardType = self.pins_decode['card']
@@ -407,6 +406,16 @@ class Pin_Config(object):
       self.decode_custom()
       self.decode_radio()
     return all_pins_decode
+
+  def reload_pin_config(self, all_pins_decode=None):
+    self.r_radio_vpins = {}
+    self.t_radio_vpins = {}
+    self.all_pins = {}
+    self.all_topics = {}
+    self.transmeter_pin = -1
+    self.rootNode=''
+    self.cp_list = []
+    self.load_pin_config(all_pins_decode)
 
   def decode_digital(self):
     pins = self.pins_decode['digitals']['dpins']
@@ -549,7 +558,7 @@ def send_radio_to_topic(arduino_id, mqtt, value, radiocode=None, device=None, de
         if radiocode_key not in pconfig.r_radio_vpins:
           logger.info("radio code={0} device ={1} not define in config ".format(radiocode, device) )
           ''' when the radiocode if not found in the config it is added in config file with default values '''
-          pconfig.add_radio_conf(radiocode, device, radiocode_key) 
+          pconfig.add_radio_conf(radiocode, device, radiocode_key)
           state = "{0}={1}".format(device, state)
       (device, topic) = pconfig.r_radio_vpins.get(radiocode_key)
       logger.info("radio code={0} device ={1} topic {2} value: {3} ".format(radiocode_key, device, topic, state) )
@@ -573,7 +582,7 @@ class Arduidom_bridge():
 def main(argv=None):
   global stopMe, options
   myrootpath = os.path.dirname(os.path.realpath(__file__)) + "/"
-  print ( "START DEAMON " )
+  print ( "START DEAMON" )
   (options, args) = cli_parser(argv)
   write_pid(options.pid_path)
   LOG_FILENAME = myrootpath + '../../../../log/duibridge_daemon'
@@ -598,10 +607,12 @@ def main(argv=None):
   options.pin_config={}
   all_pins_decode=None
   ##arduino_id="A1"
+  conf_pins_modif_time = os.stat(options.config_pins_path).st_mtime
+
+  logger.debug("Config las modif time"+str(conf_pins_modif_time))
   for arduino_num in range (1,2):
     arduino_id = "A"+str(arduino_num)
     options.pin_config.update({arduino_id:Pin_Config(arduino_id, options.config_pins_path, options.config_ports_path)})
-    print(options.pin_config[arduino_id])
     pins_decode = options.pin_config[arduino_id].load_pin_config(all_pins_decode)
     if not pins_decode==None:
       ''' config found for this Arduino, json array saved for the next round '''
@@ -650,18 +661,38 @@ def main(argv=None):
       mqttc1.subscribe_topics(topics)
     else :
       logger.debug("config not found for "+arduino_id)
-
+  count=0
   while True :
     time.sleep(0.1)
+    count+=1
     if not options.from_arduino_queues[arduino_id].empty(): 
       mess = str(options.from_arduino_queues[arduino_id].get(False))
       logger.debug( "from_arduino_queues:"+mess )
       if '>>' in mess[:6]:
         (pin, value) = mess.split(">>")
         value = value.replace("<<", '')
+        if value[-3:] == '.00':
+          value = value[:(len(value)-3)]
         logger.debug(str(pin) +" "+ str(value))
         send_to_topic(arduino_id, pin, value, mqttc1)
       options.from_arduino_queues[arduino_id].task_done()
+    else:
+      if count > 20:
+        count = 0
+        new_conf_pins_modif_time = os.stat(options.config_pins_path).st_mtime
+        if ( new_conf_pins_modif_time != conf_pins_modif_time):
+          conf_pins_modif_time=new_conf_pins_modif_time
+          logger.debug(" Config pins changed")
+          all_pins_decode=None
+          for arduino_num in range (1,2):
+            arduino_id = "A"+str(arduino_num)
+            ##options.pin_config.update({arduino_id:Pin_Config(arduino_id, options.config_pins_path, options.config_ports_path)})
+            pins_decode = options.pin_config[arduino_id].reload_pin_config(all_pins_decode)
+            if not pins_decode==None:
+              ''' config found for this Arduino, json array saved for the next round '''
+              all_pins_decode = pins_decode
+          logger.debug(" Config pins reloaded ")
+
   logger.debug("THE END")
 
 

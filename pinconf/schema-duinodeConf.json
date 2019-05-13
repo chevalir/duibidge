@@ -265,6 +265,67 @@
           }
         }       
       }
+    },
+    "dht": {
+      "type": "object",
+      "title": "DHT virtual pins configuration",
+      "properties": {
+        "apins": {
+          "type": "array",
+          "format": "table",
+          "title": "Pins",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "card_pin": {
+                "type": "string",
+                "title": "Card pin",
+                "enum": [
+                  "Select Pin",
+                  "501; DHT 1 - Humidité",
+                  "502; DHT 1 - Température",
+                  "503; DHT 2 - Humidité",
+                  "504; DHT 2 - Température",
+                  "505; DHT 3 - Humidité",
+                  "506; DHT 3 - Température",
+                  "507; DHT 4 - Humidité",
+                  "508; DHT 4 - Température",
+                  "509; DHT 5 - Humidité",
+                  "510; DHT 5 - Température",
+                  "511; DHT 6 - Humidité",
+                  "512; DHT 6 - Température",
+                  "513; DHT 7 - Humidité",
+                  "514; DHT 7 - Température",
+                  "515; DHT 8 - Humidité",
+                  "516; DHT 8 - Température"
+                ],
+                "default": "Select Pin"
+              },
+              "mode": {
+                "type": "string",
+                "title": "Pin mode",
+                "enum": [
+                  "z; disable",
+                  "0; Entrée DHT"
+                ],
+                "default": "0; Entrée DHT"
+              },
+              "prefix": {
+                "type": "boolean",
+                "format": "checkbox",
+                "default" : true,
+                "description" : "action/status",
+                "title": "add prefix (action for DHT)"
+              },
+              "topic": {
+                "type": "string",
+                "title": "nom du topic"
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
