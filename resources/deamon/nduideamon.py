@@ -315,6 +315,8 @@ class Pin_def:
   digital=1
   analog=2
   custom=3
+  radio=4
+  dht=5
   mode_status=['r', 'c', 'a', 'y','i','j', range(1,8)]
   mode_out=['o', 'i', 'y' 'e'] 
   mode_out_time=[ 'x', 'v', 'u', 'b' ]
@@ -348,12 +350,12 @@ class Pin_Config(object):
     self.transmeter_pin = -1
     self.rootNode=''
     '''Default pin number of Arduino UNO'''
-    self.DPIN=14  
-    self.APIN=6   
-    self.CPIN=32  
+    self.DPIN=14
+    self.APIN=6
+    self.CPIN=32
     self.pins_decode=None
     ''' use to send CP command to arduino CPzzrtyiooizzzzbzzzazzcccczzccccccczzzzzzzczzzzccccccc'''
-    self.cp_list = []  
+    self.cp_command = []  
     self.port=None
 
   def load_port_config(self, ports_decode=None):
@@ -400,7 +402,7 @@ class Pin_Config(object):
         self.APIN=6
         self.CPIN=32
       for dp in range(self.DPIN + self.APIN + self.CPIN):
-        self.cp_list.append('z') 
+        self.cp_command.append('z') 
       self.decode_digital()
       self.decode_ana()
       self.decode_custom()
@@ -414,12 +416,13 @@ class Pin_Config(object):
     self.all_topics = {}
     self.transmeter_pin = -1
     self.rootNode=''
-    self.cp_list = []
+    self.cp_command = []
     self.load_pin_config(all_pins_decode)
 
   def decode_digital(self):
     pins = self.pins_decode['digitals']['dpins']
     pin_tag = 'card_pin'
+    pin_offset = 0
     for pinNum in range(len(pins)):
       thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
       mode = pins[pinNum]['mode'].split(";",1)[0]
@@ -428,36 +431,56 @@ class Pin_Config(object):
       if mode=='t':
         self.transmeter_pin = thepin
       full_topic = self.get_topic_prefix(mode, prefix)+topic
-      self.all_pins[thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
-      self.all_topics[full_topic]=thepin
-      self.cp_list[thepin]=mode
+      pin_index = pin_offset + thepin
+      self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
+      self.all_topics[full_topic]=pin_index
+      self.cp_command[pin_index]=mode
   
   def decode_ana(self):
     pins = self.pins_decode['analog']['apins']
     pin_tag = 'card_pin'
+    pin_offset = self.DPIN
     for pinNum in range(len(pins)):
       thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
       mode = pins[pinNum]['mode'].split(";",1)[0]
       topic = pins[pinNum]['topic']
       prefix = pins[pinNum]['prefix']
       full_topic = self.get_topic_prefix(mode, prefix)+topic
-      self.all_pins[self.DPIN + thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
-      self.all_topics[full_topic]=self.DPIN + thepin
-      self.cp_list[self.DPIN + thepin]=mode
+      pin_index = pin_offset + thepin
+      self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.analog)
+      self.all_topics[full_topic]=pin_index
+      self.cp_command[pin_index]=mode
 
   def decode_custom(self):
     pins = self.pins_decode['custom']['cpins']
     pin_tag = 'custom_pin'
+    pin_offset = self.DPIN + self.APIN
     for pinNum in range(len(pins)):
       thepin = int(pins[pinNum][pin_tag])
       mode = pins[pinNum]['mode'].split(";",1)[0]
       topic = pins[pinNum]['topic']
       prefix = pins[pinNum]['prefix']
       full_topic = self.get_topic_prefix(mode, prefix)+topic
-      self.all_pins[self.DPIN + self.APIN + thepin] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.custom)
-      self.all_topics[full_topic]=self.DPIN + self.APIN + thepin
-      self.cp_list[self.DPIN + self.APIN + thepin]=mode
+      pin_index = pin_offset + thepin
+      self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.custom)
+      self.all_topics[full_topic]=pin_index
+      self.cp_command[pin_index]=mode
     ##logger.debug(self.custom_vpins)
+
+  def decode_dht(self):
+    logger.debug("decode_dht")
+    pins = self.pins_decode['dht']['dhtpins']
+    pin_tag = 'dht_pin'
+    pin_offset = self.DPIN + self.APIN + self.CPIN
+    for pinNum in range(len(pins)):
+      thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
+      mode = pins[pinNum]['mode'].split(";",1)[0]
+      topic = pins[pinNum]['topic']
+      prefix = pins[pinNum]['prefix']
+      full_topic = self.get_topic_prefix(mode, prefix)+topic
+      pin_index = pin_offset + thepin
+      self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.dht)
+      self.all_topics[full_topic]=pin_index
 
   def decode_radio(self):
     pins = self.pins_decode['radio']['cradio']
@@ -507,7 +530,7 @@ class Pin_Config(object):
        return(self.rootNode+"/")
 
   def get_pin_conf_cmd(self):
-    cp = 'CP' + ''.join(self.cp_list)
+    cp = 'CP' + ''.join(self.cp_command)
     return cp
 
 

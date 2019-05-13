@@ -270,7 +270,7 @@
       "type": "object",
       "title": "DHT virtual pins configuration",
       "properties": {
-        "apins": {
+        "dhtpins": {
           "type": "array",
           "format": "table",
           "title": "Pins",
@@ -278,9 +278,9 @@
           "items": {
             "type": "object",
             "properties": {
-              "card_pin": {
+              "dht_pin": {
                 "type": "string",
-                "title": "Card pin",
+                "title": "virtual DHT pin",
                 "enum": [
                   "Select Pin",
                   "501; DHT 1 - Humidité",
