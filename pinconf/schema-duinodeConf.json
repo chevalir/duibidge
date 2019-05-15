@@ -283,22 +283,22 @@
                 "title": "virtual DHT pin",
                 "enum": [
                   "Select Pin",
-                  "501; DHT 1 - Humidité",
-                  "502; DHT 1 - Température",
-                  "503; DHT 2 - Humidité",
-                  "504; DHT 2 - Température",
-                  "505; DHT 3 - Humidité",
-                  "506; DHT 3 - Température",
-                  "507; DHT 4 - Humidité",
-                  "508; DHT 4 - Température",
-                  "509; DHT 5 - Humidité",
-                  "510; DHT 5 - Température",
-                  "511; DHT 6 - Humidité",
-                  "512; DHT 6 - Température",
-                  "513; DHT 7 - Humidité",
-                  "514; DHT 7 - Température",
-                  "515; DHT 8 - Humidité",
-                  "516; DHT 8 - Température"
+                  "DHT 1H - Humidite",
+                  "DHT 1T - Temperature",
+                  "DHT 2H - Humidite",
+                  "DHT 2T - Temperature",
+                  "DHT 3H - Humidite",
+                  "DHT 3T - Temperature",
+                  "DHT 4H - Humidite",
+                  "DHT 4T - Temperature",
+                  "DHT 5H - Humidite",
+                  "DHT 5T - Temperature",
+                  "DHT 6H - Humidite",
+                  "DHT 6T - Temperature",
+                  "DHT 7H - Humidite",
+                  "DHT 7T - Temperature",
+                  "DHT 8H - Humidite",
+                  "DHT 8TT - Temperature"
                 ],
                 "default": "Select Pin"
               },
@@ -307,9 +307,9 @@
                 "title": "Pin mode",
                 "enum": [
                   "z; disable",
-                  "0; Entrée DHT"
+                  "d; Entrée DHT"
                 ],
-                "default": "0; Entrée DHT"
+                "default": "d; Entrée DHT"
               },
               "prefix": {
                 "type": "boolean",

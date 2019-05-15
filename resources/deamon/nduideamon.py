@@ -317,7 +317,7 @@ class Pin_def:
   custom=3
   radio=4
   dht=5
-  mode_status=['r', 'c', 'a', 'y','i','j', range(1,8)]
+  mode_status=['r', 'c', 'a', 'y','i','j','d', range(1,8)]
   mode_out=['o', 'i', 'y' 'e'] 
   mode_out_time=[ 'x', 'v', 'u', 'b' ]
   mode_pwm=[ 'p' ]
@@ -407,6 +407,7 @@ class Pin_Config(object):
       self.decode_ana()
       self.decode_custom()
       self.decode_radio()
+      self.decode_dht()
     return all_pins_decode
 
   def reload_pin_config(self, all_pins_decode=None):
@@ -471,9 +472,12 @@ class Pin_Config(object):
     logger.debug("decode_dht")
     pins = self.pins_decode['dht']['dhtpins']
     pin_tag = 'dht_pin'
-    pin_offset = self.DPIN + self.APIN + self.CPIN
+    pin_offset = 500
     for pinNum in range(len(pins)):
-      thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
+      str_split = pins[pinNum][pin_tag].split(' ', 3)[1]
+      thepin = int( str_split[:-1] )
+      if str_split[-1:] == 'T':
+        thepin += 1
       mode = pins[pinNum]['mode'].split(";",1)[0]
       topic = pins[pinNum]['topic']
       prefix = pins[pinNum]['prefix']
@@ -481,6 +485,7 @@ class Pin_Config(object):
       pin_index = pin_offset + thepin
       self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.dht)
       self.all_topics[full_topic]=pin_index
+      logger.debug(self.all_pins)
 
   def decode_radio(self):
     pins = self.pins_decode['radio']['cradio']
@@ -698,6 +703,15 @@ def main(argv=None):
           value = value[:(len(value)-3)]
         logger.debug(str(pin) +" "+ str(value))
         send_to_topic(arduino_id, pin, value, mqttc1)
+      elif 'DHT' in mess[:6]:
+        ''' Manage DHT Values '''
+        line = mess[4:-1] ### remove DHT: in begining and the last ;
+        dht_values = line.split(';')
+        for pinnumber in range(0, len(dht_values)):
+          if "na" not in dht_values[pinnumber]:
+            logger.debug("DHT: {} = {}".format(501+pinnumber, dht_values[pinnumber]))
+            send_to_topic(arduino_id, 501+pinnumber, dht_values[pinnumber], mqttc1)
+
       options.from_arduino_queues[arduino_id].task_done()
     else:
       if count > 20:

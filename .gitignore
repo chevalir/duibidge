@@ -16,3 +16,5 @@ sync.sh
 togit.sh
 resources/deamon/--duibridge_ports.json
 resources/deamon/testMqtt.py
+pinconf/pinConf.bakup.json
+backupPinConf.sh

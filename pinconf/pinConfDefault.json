@@ -21,6 +21,36 @@
         "mode": "y; Entrée Digitale avec Pull-Up",
         "prefix": true,
         "topic": "bureau/spot"
+      },
+      {
+        "card_pin": "DIGITAL 5 (PWM)",
+        "mode": "z; disable",
+        "prefix": true,
+        "topic": "rien"
+      },
+      {
+        "card_pin": "DIGITAL 6 (PWM)",
+        "mode": "o; Sortie Digitale",
+        "prefix": true,
+        "topic": "digital/d6"
+      },
+      {
+        "card_pin": "DIGITAL 7 ",
+        "mode": "o; Sortie Digitale",
+        "prefix": true,
+        "topic": "digital/d7"
+      },
+      {
+        "card_pin": "DIGITAL 8 ",
+        "mode": "e; Sortie Digitale en Push down",
+        "prefix": true,
+        "topic": "digital/d8"
+      },
+      {
+        "card_pin": "DIGITAL 12 ",
+        "mode": "o; Sortie Digitale",
+        "prefix": true,
+        "topic": "salon/lampe"
       }
     ]
   },
