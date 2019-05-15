@@ -485,7 +485,7 @@ class Pin_Config(object):
       pin_index = pin_offset + thepin
       self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.dht)
       self.all_topics[full_topic]=pin_index
-      logger.debug(self.all_pins)
+      ##logger.debug(self.all_pins)
 
   def decode_radio(self):
     pins = self.pins_decode['radio']['cradio']
