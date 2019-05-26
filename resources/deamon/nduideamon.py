@@ -421,93 +421,121 @@ class Pin_Config(object):
     self.load_pin_config(all_pins_decode)
 
   def decode_digital(self):
-    pins = self.pins_decode['digitals']['dpins']
-    pin_tag = 'card_pin'
-    pin_offset = 0
-    for pinNum in range(len(pins)):
-      thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
-      mode = pins[pinNum]['mode'].split(";",1)[0]
-      topic = pins[pinNum]['topic']
-      prefix = pins[pinNum]['prefix']
-      if mode=='t':
-        self.transmeter_pin = thepin
-      full_topic = self.get_topic_prefix(mode, prefix)+topic
-      pin_index = pin_offset + thepin
-      self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
-      self.all_topics[full_topic]=pin_index
-      self.cp_command[pin_index]=mode
-  
+    try:
+      pins = self.pins_decode['digitals']['dpins']
+      pin_tag = 'card_pin'
+      pin_offset = 0
+      for pinNum in range(len(pins)):
+        thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
+        mode = pins[pinNum]['mode'].split(";",1)[0]
+        topic = pins[pinNum]['topic']
+        prefix = pins[pinNum]['prefix']
+        if mode=='t':
+          self.transmeter_pin = thepin
+        full_topic = self.get_topic_prefix(mode, prefix)+topic
+        pin_index = pin_offset + thepin
+        self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.digital)
+        self.all_topics[full_topic]=pin_index
+        self.cp_command[pin_index]=mode
+      pass
+    except:
+      logger.info("No digitals config")
+      pass
+ 
   def decode_ana(self):
-    pins = self.pins_decode['analog']['apins']
-    pin_tag = 'card_pin'
-    pin_offset = self.DPIN
-    for pinNum in range(len(pins)):
-      thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
-      mode = pins[pinNum]['mode'].split(";",1)[0]
-      topic = pins[pinNum]['topic']
-      prefix = pins[pinNum]['prefix']
-      full_topic = self.get_topic_prefix(mode, prefix)+topic
-      pin_index = pin_offset + thepin
-      self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.analog)
-      self.all_topics[full_topic]=pin_index
-      self.cp_command[pin_index]=mode
+    try:
+      pins = self.pins_decode['analog']['apins']
+      pin_tag = 'card_pin'
+      pin_offset = self.DPIN
+      for pinNum in range(len(pins)):
+        thepin = int(str(pins[pinNum][pin_tag]).split(' ', 2)[1])
+        mode = pins[pinNum]['mode'].split(";",1)[0]
+        topic = pins[pinNum]['topic']
+        prefix = pins[pinNum]['prefix']
+        full_topic = self.get_topic_prefix(mode, prefix)+topic
+        pin_index = pin_offset + thepin
+        self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.analog)
+        self.all_topics[full_topic]=pin_index
+        self.cp_command[pin_index]=mode
+    ##logger.debug(self.custom_vpins)
+      pass
+    except:
+      logger.info("No analog config")
+      pass
 
   def decode_custom(self):
-    pins = self.pins_decode['custom']['cpins']
-    pin_tag = 'custom_pin'
-    pin_offset = self.DPIN + self.APIN
-    for pinNum in range(len(pins)):
-      thepin = int(pins[pinNum][pin_tag])
-      mode = pins[pinNum]['mode'].split(";",1)[0]
-      topic = pins[pinNum]['topic']
-      prefix = pins[pinNum]['prefix']
-      full_topic = self.get_topic_prefix(mode, prefix)+topic
-      pin_index = pin_offset + thepin
-      self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.custom)
-      self.all_topics[full_topic]=pin_index
-      self.cp_command[pin_index]=mode
+    try:
+      pins = self.pins_decode['custom']['cpins']
+      pin_tag = 'custom_pin'
+      pin_offset = self.DPIN + self.APIN
+      for pinNum in range(len(pins)):
+        thepin = int(pins[pinNum][pin_tag])
+        mode = pins[pinNum]['mode'].split(";",1)[0]
+        topic = pins[pinNum]['topic']
+        prefix = pins[pinNum]['prefix']
+        full_topic = self.get_topic_prefix(mode, prefix)+topic
+        pin_index = pin_offset + thepin
+        self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.custom)
+        self.all_topics[full_topic]=pin_index
+        self.cp_command[pin_index]=mode
     ##logger.debug(self.custom_vpins)
+      pass
+    except:
+      logger.info("No custom config")
+      pass
 
   def decode_dht(self):
-    logger.debug("decode_dht")
-    pins = self.pins_decode['dht']['dhtpins']
-    pin_tag = 'dht_pin'
-    pin_offset = 500
-    for pinNum in range(len(pins)):
-      str_split = pins[pinNum][pin_tag].split(' ', 3)[1]
-      thepin = int( str_split[:-1] )
-      if str_split[-1:] == 'T':
-        thepin += 1
-      mode = pins[pinNum]['mode'].split(";",1)[0]
-      topic = pins[pinNum]['topic']
-      prefix = pins[pinNum]['prefix']
-      full_topic = self.get_topic_prefix(mode, prefix)+topic
-      pin_index = pin_offset + thepin
-      self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.dht)
-      self.all_topics[full_topic]=pin_index
+    logger.debug("decode_dht oups")
+    try:
+      pins = self.pins_decode['dht']['dhtpins']
+      
+      pin_tag = 'dht_pin'
+      pin_offset = 500
+      for pinNum in range(len(pins)):
+        str_split = pins[pinNum][pin_tag].split(' ', 3)[1]
+        thepin = int( str_split[:-1] )
+        if str_split[-1:] == 'T':
+          thepin += 1
+        mode = pins[pinNum]['mode'].split(";",1)[0]
+        topic = pins[pinNum]['topic']
+        prefix = pins[pinNum]['prefix']
+        full_topic = self.get_topic_prefix(mode, prefix)+topic
+        pin_index = pin_offset + thepin
+        self.all_pins[pin_index] = Pin_def(topic=full_topic, mode=mode, type=Pin_def.dht)
+        self.all_topics[full_topic]=pin_index
+      pass
+    except:
+      logger.info("No dht config")
+      pass
       ##logger.debug(self.all_pins)
 
   def decode_radio(self):
-    pins = self.pins_decode['radio']['cradio']
-    for pinNum in range(len(pins)):
-      mode = pins[pinNum]['mode'].split(";",1)[0]
-      topic = pins[pinNum]['topic']
-      device = pins[pinNum]['device']
-      prefix = pins[pinNum]['prefix']
-      '''if len(device) < 2:
-        device = "0"+device '''
-      # @TODO change device format
-      radiocode = pins[pinNum]['radiocode']
-  
-      if mode in ['r', 'tr']: 
-        status_topic = self.get_topic_prefix('r', prefix)+topic
-        radiocode_key = '{}#{:0>2}'.format(pins[pinNum]['radiocode'], device)
-        self.r_radio_vpins.update({radiocode_key:(device, status_topic)})
+    try:
+      pins = self.pins_decode['radio']['cradio']
+      for pinNum in range(len(pins)):
+        mode = pins[pinNum]['mode'].split(";",1)[0]
+        topic = pins[pinNum]['topic']
+        device = pins[pinNum]['device']
+        prefix = pins[pinNum]['prefix']
+        '''if len(device) < 2:
+          device = "0"+device '''
+        # @TODO change device format
+        radiocode = pins[pinNum]['radiocode']
+    
+        if mode in ['r', 'tr']: 
+          status_topic = self.get_topic_prefix('r', prefix)+topic
+          radiocode_key = '{}#{:0>2}'.format(pins[pinNum]['radiocode'], device)
+          self.r_radio_vpins.update({radiocode_key:(device, status_topic)})
 
-      if mode in ['t', 'tr']:
-        action_topic = self.get_topic_prefix('t', prefix)+topic
-        self.all_topics[action_topic]=self.transmeter_pin
-        self.t_radio_vpins.update({action_topic:(device, radiocode)})
+        if mode in ['t', 'tr']:
+          action_topic = self.get_topic_prefix('t', prefix)+topic
+          self.all_topics[action_topic]=self.transmeter_pin
+          self.t_radio_vpins.update({action_topic:(device, radiocode)})
+      pass
+    except:
+      logger.info("No radio config")
+      pass
+
 
   def add_radio_conf(self, radiocode, device, radiocode_key):
     ''' This function is able to add radio configuration line in configuration file
@@ -625,11 +653,11 @@ def main(argv=None):
   logger.addHandler(console)
   logger.setLevel(logging.DEBUG)
 
-  ##sys.stderr = open(LOG_FILENAME + "_stderr", 'a', 1)
+  sys.stderr = open(LOG_FILENAME + "_stderr", 'a', 1)
 
-  # options.loglevel.upper()
-  ##logger.setLevel(logging.getLevelName(options.loglevel.upper()))
-  ##
+  options.loglevel.upper()
+  logger.setLevel(logging.getLevelName(options.loglevel.upper()))
+
   logger.info("# duiBridged - duinode bridge for Jeedom # loglevel="+options.loglevel)
   
   options.pin_config={}
@@ -637,7 +665,7 @@ def main(argv=None):
   ##arduino_id="A1"
   conf_pins_modif_time = os.stat(options.config_pins_path).st_mtime
 
-  logger.debug("Config las modif time"+str(conf_pins_modif_time))
+  logger.info("Config last modif time"+str(conf_pins_modif_time))
   for arduino_num in range (1,2):
     arduino_id = "A"+str(arduino_num)
     options.pin_config.update({arduino_id:Pin_Config(arduino_id, options.config_pins_path, options.config_ports_path)})
@@ -688,7 +716,7 @@ def main(argv=None):
       topics = options.pin_config[arduino_id].t_radio_vpins.keys()
       mqttc1.subscribe_topics(topics)
     else :
-      logger.debug("config not found for "+arduino_id)
+      logger.info("config not found for "+arduino_id)
   count=0
   while True :
     time.sleep(0.1)
@@ -719,7 +747,7 @@ def main(argv=None):
         new_conf_pins_modif_time = os.stat(options.config_pins_path).st_mtime
         if ( new_conf_pins_modif_time != conf_pins_modif_time):
           conf_pins_modif_time=new_conf_pins_modif_time
-          logger.debug(" Config pins changed")
+          logger.info(" Config pins changed")
           all_pins_decode=None
           for arduino_num in range (1,2):
             arduino_id = "A"+str(arduino_num)
@@ -728,9 +756,9 @@ def main(argv=None):
             if not pins_decode==None:
               ''' config found for this Arduino, json array saved for the next round '''
               all_pins_decode = pins_decode
-          logger.debug(" Config pins reloaded ")
+          logger.info(" Config pins reloaded ")
 
-  logger.debug("THE END")
+  logger.info("THE END")
 
 
 '''-------------------------------'''
