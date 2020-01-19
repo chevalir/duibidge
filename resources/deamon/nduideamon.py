@@ -26,6 +26,8 @@ to_node   = {"config_pin" : 'CP', 'force_refresh':"RF", 'force_reload':"RE", "pr
 
 def format_chacon(t_pin, radiocode, group, action, device):
   ## example : SP03 H 12802190 0 100
+  ## example : SP:3,H,12802190,0,100
+
   cmd = "SP{:0>2}H{}{}{}{:0>2}".format(t_pin, radiocode, group, action, device )
   return cmd 
 
@@ -317,7 +319,7 @@ class Pin_def:
   custom=3
   radio=4
   dht=5
-  mode_status=['r', 'c', 'a', 'y','i','j','d', range(1,8)]
+  mode_status=['r', 'c', 'a', 'y','i','j', range(1,8)]
   mode_out=['o', 'i', 'y' 'e'] 
   mode_out_time=[ 'x', 'v', 'u', 'b' ]
   mode_pwm=[ 'p' ]
